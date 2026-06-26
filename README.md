@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
@@ -35,10 +34,8 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-=======
 # CARZ
 A full-stack, multi-role car rental and marketplace system built to simulate a real-world vehicle ecosystem where users can rent or buy cars, owners can manage listings and analytics, and drivers can interact with customers in real time.
->>>>>>> 0a5fdb7b5f30d00c89dcabffbf2d064022c3fd46
 
 ## ER DIAGRAM
 ![ER Diagram](Images/ER_Diagram.png)
