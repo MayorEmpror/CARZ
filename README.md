@@ -39,3 +39,6 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 # CARZ
 A full-stack, multi-role car rental and marketplace system built to simulate a real-world vehicle ecosystem where users can rent or buy cars, owners can manage listings and analytics, and drivers can interact with customers in real time.
 >>>>>>> 0a5fdb7b5f30d00c89dcabffbf2d064022c3fd46
+
+## ER DIAGRAM
+![ER Diagram](/Images/ER_Diagram.png)
