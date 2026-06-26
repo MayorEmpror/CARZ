@@ -39,3 +39,16 @@ A full-stack, multi-role car rental and marketplace system built to simulate a r
 
 ## ER DIAGRAM
 ![ER Diagram](Images/ER_Diagram.png)
+
+
+## Development Workflow
+
+CARZ is developed using a layered, incremental approach where each feature builds upon a stable foundation. The project begins with designing the PostgreSQL database schema, including tables, relationships, constraints, and indexes, followed by setting up the local Docker database and seeding initial data. Once the data layer is complete, the backend APIs are implemented using Next.js Route Handlers to provide CRUD operations and business logic for cars, rentals, purchases, payments, and performance tracking.
+
+With the backend in place, development moves to the frontend by creating public-facing pages such as the landing page, vehicle catalogue, car details, and informational pages (About, Contact, FAQ, etc.). After visitors can browse the platform, authentication and authorization are introduced, allowing users to securely register, log in, and access role-based features as either customers or owners.
+
+The next phase focuses on dashboards and the application's core workflows. Customers can browse vehicles, rent or purchase cars, and review their transaction history, while owners can manage inventory, rentals, purchases, and vehicle performance through dedicated dashboards. Once these business workflows are functioning correctly, a payment gateway is integrated to securely process transactions and update payment statuses.
+
+The final stage consists of refining the user interface, improving responsiveness and accessibility, optimizing performance, adding notifications and email functionality, testing the application thoroughly, and deploying the frontend and PostgreSQL database to production. Throughout development, each feature follows a consistent cycle of planning, implementation, testing, committing to Git, and pushing changes to GitHub, ensuring the project remains organized, maintainable, and easy to extend.
+
+![Workflow](Images/WorkFlow.png)
