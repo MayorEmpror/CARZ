@@ -1,39 +1,41 @@
-import CarCard from "@/components/CarCard";
+//import CarCard from "@/components/CarCard";
 
-type Car = {
-  car_id: number;
-  make: string;
-  model: string;
-  year: number;
-  price: string;
-  status: string;
-};
+// type Car = {
+//   car_id: number;
+//   make: string;
+//   model: string;
+//   year: number;
+//   price: string;
+//   status: string;
+// };
 
-async function getCars(): Promise<Car[]> {
-  const res = await fetch(`${process.env.HOST}/api/cars`, {
-    cache: "no-store",
-  });
+// async function getCars(): Promise<Car[]> {
+//   console.log("HOST:", process.env.HOST);
+//   const res = await fetch(`${process.env.HOST}/api/cars`, {
+//     cache: "no-store",
+//   });
 
-  return res.json();
-}
+//   return res.json();
+// }
 
 export default async function Home() {
-  const cars = await getCars();
+  //const cars = await getCars();
+  //console.log(cars)
 
   return (
     <main>
       <h1>Car Catalogue</h1>
 
-      {cars.map((car) => (
+      {/* {cars.map((car, key) => (
         <CarCard
-          key={car.car_id}
+          key={key}
           make={car.make}
           model={car.model}
           year={car.year}
           price={car.price}
           status={car.status}
         />
-      ))}
+      ))} */}
     </main>
   );
 }
