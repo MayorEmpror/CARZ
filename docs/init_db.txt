@@ -1,0 +1,7 @@
+docker start car-rental-db 
+docker exec -it car-rental-db psql -U postgres -d car_rental 
+docker stop car-rental-db
+
+docker ps -a    see  all dbs 
+docker ps       see active ones 
+\dt             see the tables in the db
