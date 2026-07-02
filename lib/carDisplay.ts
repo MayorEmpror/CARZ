@@ -12,16 +12,13 @@ import  Car  from "./types";
 const TOTAL_PLACEHOLDER_IMAGES = 6; // image_1.jpeg ... image_6.jpeg in /public/cars
 
 export function getCarImage(car: Car) {
-  const index = (car.car_id % TOTAL_PLACEHOLDER_IMAGES) + 1;
-  return `/Images/image_${index}.png`;
+  return car.image_url || "/Images/image_fallback.png";
 }
-
 export function getCarRating(car: Car) {
-  // deterministic pseudo-rating between 4.0 and 5.0
-  const seed = (car.car_id * 37) % 100;
-  const rating = 4 + seed / 100;
-  const reviews = 20 + ((car.car_id * 53) % 950);
-  return { rating: Math.round(rating * 10) / 10, reviews };
+  return {
+    rating: car.rating,
+    reviews: car.rating_count,
+  };
 }
 
 export function getCarDistance(car: Car) {
