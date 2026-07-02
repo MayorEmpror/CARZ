@@ -6,4 +6,7 @@ export default interface Car {
     year: number;
     price: string;
     status: string;
+    rating: string;
+    rating_count: number;
+    image_url : string;
   };

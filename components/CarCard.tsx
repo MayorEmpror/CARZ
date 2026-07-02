@@ -29,7 +29,7 @@ export default function CarCard({ car, initiallyFavourited = false }: Props) {
           {meters}m ({minutes} min)
           <span className="mx-1 text-neutral-300">•</span>
           <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-          <span className="text-neutral-700">{rating.toFixed(1)}</span>
+          <span className="text-neutral-700">{rating}</span>
           <span className="text-neutral-400">({reviews})</span>
         </span>
 
