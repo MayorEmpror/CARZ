@@ -3,19 +3,11 @@ import Sidebar from "@/components/Sidebar";
 import FilterPanel from "@/components/filters/FilterPanel";
 import CarGridHeader from "@/components/CarGridHeader";
 import CarGrid from "@/components/CarGrid";
-import  Car  from "@/lib/types";
-
-async function getCars(): Promise<Car[]> {
-  const res = await fetch(`${process.env.HOST}/api/cars`, {
-    cache: "no-store",
-  });
-
-  return res.json();
-}
+import  {getCars} from "@/lib/api/car"
 
 export default async function Home() {
   const cars = await getCars();
-
+  console.log(process.env.HOST)
   return (
     <div className="flex h-screen flex-col bg-neutral-50">
       <TopBar />

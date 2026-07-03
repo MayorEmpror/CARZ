@@ -1,5 +1,7 @@
+import { Timestamp } from "next/dist/server/lib/cache-handlers/types";
+
 // Matches the shape returned by GET /api/cars
-export default interface Car {
+export  interface Car {
     car_id: number;
     make: string;
     model: string;
@@ -10,3 +12,27 @@ export default interface Car {
     rating_count: number;
     image_url : string;
   };
+
+
+export  interface Car_Perf{
+    performance_id : number;
+    car_id : number;
+    mileage : number;
+    top_speed : number;
+    acceleration_0_100 : number;    
+    engine_power : number;          
+    torque : number;                   
+    fuel_efficiency : number;          
+    created_at : Timestamp;
+  }
+
+export interface Payment{
+  payment_id :  number   ;                 
+  rental_id   :  number   ;    
+  purchase_id  :  number   ;   
+  amount      :  number   ;    
+  payment_method :  string   ; 
+  payment_date   :  Date   ;
+  status         :  string   ;
+  transaction_ref:  string  ;
+}

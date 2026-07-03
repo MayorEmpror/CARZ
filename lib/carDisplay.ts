@@ -1,4 +1,4 @@
-import  Car  from "./types";
+import  {Car}  from "./types";
 
 /**
  * Your /api/cars response only has car_id, make, model, year, price, status.

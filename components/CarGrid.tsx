@@ -1,4 +1,4 @@
-import  Car  from "@/lib/types";
+import  {Car}  from "@/lib/types";
 import CarCard from "./CarCard";
 
 export default function CarGrid({ cars }: { cars: Car[] }) {

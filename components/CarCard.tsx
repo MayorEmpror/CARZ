@@ -2,7 +2,7 @@
 
 import { Heart, MapPin, Star } from "lucide-react";
 import { useState } from "react";
-import   Car from "@/lib/types";
+import   {Car} from "@/lib/types";
 import {
   formatPrice,
   getCarDistance,
