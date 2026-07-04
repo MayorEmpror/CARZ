@@ -9,7 +9,7 @@ export async function getCars(): Promise<Car[]> {
 }
 
 export async function editCars(id: number, data : Partial<Car>): Promise<Car> {
-    const res = await fetch(`${process.env.HOST}/api/cars/${id}`, {
+    const res = await fetch(`/api/cars/${id}`, {
         method: "PUT",
         headers : {
             "Content-Type" : "application/json"

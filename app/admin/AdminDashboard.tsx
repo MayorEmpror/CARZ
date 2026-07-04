@@ -54,11 +54,12 @@ export default function AdminDashboard({ initialCars }: Props) {
           {editingCarId === car.car_id ? (
             <div className="mt-2 space-y-2">
               <input
+              
                 value={editData.price ?? ""}
                 onChange={(e) =>
                   handleChange("price", Number(e.target.value))
                 }
-                className="text-black"
+                className="text-black bg-white"
                 placeholder="Price"
               />
 
@@ -67,7 +68,7 @@ export default function AdminDashboard({ initialCars }: Props) {
                 onChange={(e) =>
                   handleChange("status", e.target.value)
                 }
-                className="text-black"
+                className="text-black bg-white"
                 placeholder="Status"
               />
 

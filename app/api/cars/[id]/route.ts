@@ -3,9 +3,11 @@ import db from "@/lib/db";
 
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } },
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params;
+
     const body = await req.json();
 
     const {
@@ -22,6 +24,15 @@ export async function PUT(
       rating_count,
       image_url,
     } = body;
+
+    const carId = Number(id);
+
+    if (isNaN(carId)) {
+      return NextResponse.json(
+        { error: "Invalid car id" },
+        { status: 400 }
+      );
+    }
 
     const { rows } = await db.query(
       `UPDATE cars
@@ -41,27 +52,36 @@ export async function PUT(
        WHERE car_id = $13
        RETURNING *`,
       [
-        owner_id,
-        make,
-        model,
-        year,
-        body_type,
-        fuel_type,
-        transmission,
-        price,
-        status,
-        rating,
-        rating_count,
-        image_url,
-        Number(params.id),
-      ],
+        owner_id ?? null,
+        make ?? null,
+        model ?? null,
+        year ?? null,
+        body_type ?? null,
+        fuel_type ?? null,
+        transmission ?? null,
+        price ?? null,
+        status ?? null,
+        rating ?? null,
+        rating_count ?? null,
+        image_url ?? null,
+        carId,
+      ]
     );
+
+    if (rows.length === 0) {
+      return NextResponse.json(
+        { error: "Car not found" },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json(rows[0]);
   } catch (error) {
+    console.error(error);
+
     return NextResponse.json(
       { error: "failed to update car" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
