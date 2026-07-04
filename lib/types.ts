@@ -13,6 +13,16 @@ export  interface Car {
     image_url : string;
   };
 
+export interface User{
+  user_id  : number;
+  full_name  : string;
+  email      :  string;
+  phone      :   string
+  password_hash: Text
+  role        :  string;
+  created_at : Timestamp;
+}
+
 
 export  interface Car_Perf{
     performance_id : number;

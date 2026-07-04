@@ -8,7 +8,7 @@ interface Props {
   initialCars: Car[];
 }
 
-export default function AdminDashboard({ initialCars }: Props) {
+export default function CarTab({ initialCars }: Props) {
   const [cars, setCars] = useState(initialCars);
 
   const [editingCarId, setEditingCarId] = useState<number | null>(null);
