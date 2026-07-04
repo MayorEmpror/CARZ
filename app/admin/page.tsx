@@ -1,12 +1,9 @@
-import CarTab from "./CarHandler";
-import CustomerTab from "./CustomersHandler"
+// app/admin/page.tsx
+import AdminLayout from "./AdminLayout";
 import { getCars } from "@/lib/api/car";
 
 export default async function AdminPage() {
   const cars = await getCars();
 
-  return <>
-  <CarTab initialCars={cars} />
-  <CustomerTab  />
-  </>;
+  return <AdminLayout initialCars={cars} />;
 }
