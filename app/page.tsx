@@ -1,41 +1,25 @@
-//import CarCard from "@/components/CarCard";
+import Link from "next/link";
 
-// type Car = {
-//   car_id: number;
-//   make: string;
-//   model: string;
-//   year: number;
-//   price: string;
-//   status: string;
-// };
-
-// async function getCars(): Promise<Car[]> {
-//   console.log("HOST:", process.env.HOST);
-//   const res = await fetch(`${process.env.HOST}/api/cars`, {
-//     cache: "no-store",
-//   });
-
-//   return res.json();
-// }
-
-export default async function Home() {
-  //const cars = await getCars();
-  //console.log(cars)
-
+export default function Home() {
   return (
-    <main>
-      <h1>Car Catalogue</h1>
+    <main className="min-h-screen flex flex-col items-center justify-center gap-6">
+      <h1 className="text-4xl font-bold">Car Catalogue</h1>
 
-      {/* {cars.map((car, key) => (
-        <CarCard
-          key={key}
-          make={car.make}
-          model={car.model}
-          year={car.year}
-          price={car.price}
-          status={car.status}
-        />
-      ))} */}
+      <nav className="flex gap-4">
+        <Link
+          href="/showroom"
+          className="rounded-lg bg-blue-600 px-6 py-3 text-white hover:bg-blue-700 transition"
+        >
+          Showroom
+        </Link>
+
+        <Link
+          href="/admin"
+          className="rounded-lg bg-gray-800 px-6 py-3 text-white hover:bg-gray-900 transition"
+        >
+          Admin
+        </Link>
+      </nav>
     </main>
   );
 }

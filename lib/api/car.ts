@@ -8,6 +8,8 @@ export async function getCars(): Promise<Car[]> {
     return res.json();
 }
 
+
+
 export async function editCars(id: number, data : Partial<Car>): Promise<Car> {
     const res = await fetch(`/api/cars/${id}`, {
         method: "PUT",

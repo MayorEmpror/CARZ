@@ -1,5 +1,6 @@
 import  {Car}  from "@/lib/types";
 import CarCard from "./CarCard";
+import Link from "next/link";
 
 export default function CarGrid({ cars }: { cars: Car[] }) {
   if (cars.length === 0) {
@@ -13,7 +14,9 @@ export default function CarGrid({ cars }: { cars: Car[] }) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {cars.map((car) => (
-        <CarCard key={car.car_id} car={car} />
+        <Link key={car.car_id} href={`/showroom/${car.car_id}`}>
+       <CarCard key={car.car_id} car={car} />
+       </Link>
       ))}
     </div>
   );
