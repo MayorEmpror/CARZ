@@ -2,14 +2,17 @@
 import AdminLayout from "./AdminLayout";
 import { getCars } from "@/lib/api/car";
 import { getCustomers } from "@/lib/api/customers";
+import {getOwners} from "@/lib/api/owners"
 
 
 export default async function AdminPage() {
   const cars = await getCars();
   const customers = await getCustomers();
+  const owners = await getOwners();
 
   return <AdminLayout
    initialCars={cars} 
    initialCust={customers}
+   initialOnwers={owners}
     />;
 }
