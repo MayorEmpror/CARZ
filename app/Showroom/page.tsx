@@ -5,6 +5,7 @@ import CarGridHeader from "@/components/CarGridHeader";
 import CarGrid from "@/components/CarGrid";
 import  {getCars} from "@/lib/api/car"
 
+
 export default async function Home() {
   const cars = await getCars();
   console.log(process.env.HOST)

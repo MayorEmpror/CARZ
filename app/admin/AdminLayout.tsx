@@ -1,5 +1,6 @@
 "use client";
-
+import { Car } from "@/lib/types";
+import { User } from "@/lib/types";
 import { useState } from "react";
 import CarTab from "./CarHandler";
 import CustomerTab from "./CustomersHandler";
@@ -8,8 +9,10 @@ type Tab = "cars" | "customers";
 
 export default function AdminLayout({
   initialCars,
+  initialCust,
 }: {
-  initialCars: any[];
+  initialCars: Car[];
+  initialCust : User[];
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("cars");
 
@@ -45,7 +48,10 @@ export default function AdminLayout({
           <CarTab initialCars={initialCars} />
         )}
 
-        {activeTab === "customers" && <CustomerTab />}
+        {activeTab === "customers" && (
+           <CustomerTab initialCustomers={initialCust} />
+        )
+         }
       </div>
     </div>
   );

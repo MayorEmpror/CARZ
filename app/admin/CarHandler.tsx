@@ -41,7 +41,7 @@ export default function CarTab({ initialCars }: Props) {
 
   return (
     <div className="text-white p-4">
-      <h1 className="text-2xl mb-4">Admin Dashboard</h1>
+      <h1 className="text-2xl mb-4">Cars</h1>
 
       {cars.map((car) => (
         <div key={car.car_id} className="border p-3 mb-3">
