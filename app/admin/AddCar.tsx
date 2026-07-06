@@ -30,7 +30,7 @@ const initialForm: FormState = {
   transmission: "",
 };
 
-export default function AddCarPage() {
+export default function AddCar() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(initialForm);

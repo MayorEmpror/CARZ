@@ -24,6 +24,7 @@ export interface User{
 }
 
 
+
 export  interface Car_Perf{
     performance_id : number;
     car_id : number;
@@ -35,6 +36,9 @@ export  interface Car_Perf{
     fuel_efficiency : number;          
     created_at : Timestamp;
   }
+
+export type CarDetails = Car & Car_Perf;
+
 
 export interface Payment{
   payment_id :  number   ;                 

@@ -5,8 +5,9 @@ import { useState } from "react";
 import CarTab from "./CarHandler";
 import CustomerTab from "./CustomersHandler";
 import {OwnerTab} from "./OwnersHandler"
+import AddCar from "./AddCar"
 
-type Tab = "cars" | "customers" | "owners";
+type Tab = "cars" | "customers" | "owners" | "addcar";
 
 export default function AdminLayout({
   initialCars,
@@ -46,10 +47,19 @@ export default function AdminLayout({
         <button
           onClick={() => setActiveTab("owners")}
           className={`block w-full text-left p-3 rounded mt-2 ${
-            activeTab === "customers" ? "bg-zinc-700" : "hover:bg-zinc-800"
+            activeTab === "owners" ? "bg-zinc-700" : "hover:bg-zinc-800"
           }`}
         >
           Owners
+        </button>
+
+        <button
+          onClick={() => setActiveTab("addcar")}
+          className={`block w-full text-left p-3 rounded mt-2 ${
+            activeTab === "addcar" ? "bg-zinc-700" : "hover:bg-zinc-800"
+          }`}
+        >
+          AddCars
         </button>
       </div>
 
@@ -66,6 +76,10 @@ export default function AdminLayout({
 
         {activeTab === "owners" && (
            <OwnerTab initialOnwers={initialOnwers} />
+        )
+         }
+          {activeTab === "addcar" && (
+           <AddCar  />
         )
          }
       </div>

@@ -1,4 +1,5 @@
 import {Car} from "@/lib/types"
+import { CarDetails } from "@/lib/types";
 
 export async function getCars(): Promise<Car[]> {
     const res = await fetch(`${process.env.HOST}/api/cars`, {
@@ -6,6 +7,18 @@ export async function getCars(): Promise<Car[]> {
     });
   
     return res.json();
+}
+
+export async function carDetails(id : string): Promise<CarDetails>{
+    const res = await fetch(`${process.env.HOST}/api/details/${id}`,{
+        cache: "no-store",
+    });
+    if(!res.ok ){
+        console.log("res: "+ res)
+        throw new Error("Failed to fetch car performance");
+    }
+    return res.json();
+    
 }
 
 
