@@ -15,7 +15,7 @@ interface Props {
 }
 
 const inputClass =
-  "w-full h-9 rounded-lg border border-white/10 bg-[#0F0F14] px-3 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-violet-300/50 transition-colors";
+  "w-full h-9  rounded-lg border border-white/10 bg-[#0F0F14] px-3 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-violet-300/50 transition-colors";
 
 export default function CarTab({ initialCars }: Props) {
   const [cars, setCars] = useState(initialCars);
@@ -109,7 +109,7 @@ function CarCard({ car, onUpdate }: { car: Car; onUpdate: (car: Car) => void }) 
             <StatusBadge status={car.status} />
           </div>
 
-          <div className="relative h-[180px] mt-2 bg-gradient-to-b from-neutral-800 to-neutral-900 group cursor-pointer">
+          <div className="relative h-[180px] mt-2 bg-linear-to-b from-neutral-800 to-neutral-900 group cursor-pointer">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={car.image_url}
