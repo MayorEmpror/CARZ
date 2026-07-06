@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import {
   MorphingPopover,
   MorphingPopoverTrigger,
@@ -16,6 +16,19 @@ interface Props {
 
 const inputClass =
   "w-full h-9  rounded-lg border border-white/10 bg-[#0F0F14] px-3 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-violet-300/50 transition-colors";
+
+async function uploadImage(file: File): Promise<{ url: string }> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch("/api/upload", {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!res.ok) throw new Error("Image upload failed");
+  return res.json();
+}
 
 export default function CarTab({ initialCars }: Props) {
   const [cars, setCars] = useState(initialCars);
@@ -70,12 +83,23 @@ function CarCard({ car, onUpdate }: { car: Car; onUpdate: (car: Car) => void }) 
   const [editData, setEditData] = useState<Partial<Car>>(car);
   const [saving, setSaving] = useState(false);
 
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function resetPhotoState() {
+    setFile(null);
+    setPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
   function handleOpenChange(open: boolean) {
-    if (open) {
-      setEditData(car);
-    } else {
-      setEditData(car);
-    }
+    setEditData(car);
+    resetPhotoState();
     setIsOpen(open);
   }
 
@@ -83,14 +107,36 @@ function CarCard({ car, onUpdate }: { car: Car; onUpdate: (car: Car) => void }) 
     setEditData((prev) => ({ ...prev, [field]: value }));
   }
 
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const selected = e.target.files?.[0];
+    if (!selected) return;
+
+    setFile(selected);
+    setPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(selected);
+    });
+  }
+
   async function handleSave() {
     setSaving(true);
     try {
-      const updated = await editCars(car.car_id, editData);
+      let payload = editData;
+
+      if (file) {
+        setUploading(true);
+        const { url } = await uploadImage(file);
+        payload = { ...payload, image_url: url };
+        setUploading(false);
+      }
+
+      const updated = await editCars(car.car_id, payload);
       onUpdate(updated);
       setIsOpen(false);
+      resetPhotoState();
     } finally {
       setSaving(false);
+      setUploading(false);
     }
   }
 
@@ -227,13 +273,44 @@ function CarCard({ car, onUpdate }: { car: Car; onUpdate: (car: Car) => void }) 
                 </Field>
               </div>
 
-              <Field label="Image URL">
-                <input
-                  value={editData.image_url ?? ""}
-                  onChange={(e) => handleChange("image_url", e.target.value)}
-                  className={inputClass}
-                />
-              </Field>
+              <div>
+                <label className="block text-sm text-[#8B9299] mb-2">Photo</label>
+                <label
+                  htmlFor={`car-photo-${uniqueId}`}
+                  className="flex items-center gap-4 bg-[#1C2126] border border-white/5 rounded-xl p-3 cursor-pointer hover:border-white/10 transition-colors"
+                >
+                  {preview ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={preview}
+                      alt="Selected car"
+                      className="w-14 h-14 object-cover rounded-lg"
+                    />
+                  ) : editData.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={editData.image_url}
+                      alt="Current car"
+                      className="w-14 h-14 object-cover rounded-lg"
+                    />
+                  ) : (
+                    <div className="w-14 h-14 rounded-lg bg-[#262C33] flex items-center justify-center text-[#8B9299] text-xl">
+                      +
+                    </div>
+                  )}
+                  <span className="text-sm text-[#8B9299]">
+                    {uploading ? "Uploading..." : file ? file.name : "Choose an image"}
+                  </span>
+                  <input
+                    id={`car-photo-${uniqueId}`}
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
+              </div>
             </div>
 
             <div className="flex justify-between items-center px-5 py-4 mt-1">
@@ -249,7 +326,7 @@ function CarCard({ car, onUpdate }: { car: Car; onUpdate: (car: Car) => void }) 
                 disabled={saving}
                 className="bg-violet-300 hover:bg-violet-400 disabled:opacity-50 text-black text-sm font-medium px-4 py-2 rounded-lg transition-colors"
               >
-                {saving ? "Saving..." : "Save changes"}
+                {saving ? (uploading ? "Uploading..." : "Saving...") : "Save changes"}
               </button>
             </div>
           </form>
