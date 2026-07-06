@@ -5,21 +5,24 @@ import {
   useId,
   useRef,
   useEffect,
+  useCallback,
   createContext,
   useContext,
   isValidElement,
+  cloneElement,
 } from 'react';
 import {
   AnimatePresence,
   MotionConfig,
   motion,
-  Transition,
-  Variants,
+  type Transition,
+  type Variants,
+  type HTMLMotionProps,
 } from 'motion/react';
 import useClickOutside from './useClickOutside';
 import { cn } from '@/lib/utils';
 
-const TRANSITION = {
+const TRANSITION: Transition = {
   type: 'spring',
   bounce: 0.1,
   duration: 0.4,
@@ -50,19 +53,19 @@ function usePopoverLogic({
 
   const isOpen = controlledOpen ?? uncontrolledOpen;
 
-  const open = () => {
+  const open = useCallback(() => {
     if (controlledOpen === undefined) {
       setUncontrolledOpen(true);
     }
     onOpenChange?.(true);
-  };
+  }, [controlledOpen, onOpenChange]);
 
-  const close = () => {
+  const close = useCallback(() => {
     if (controlledOpen === undefined) {
       setUncontrolledOpen(false);
     }
     onOpenChange?.(false);
-  };
+  }, [controlledOpen, onOpenChange]);
 
   return { isOpen, open, close, uniqueId };
 }
@@ -75,7 +78,7 @@ export type MorphingPopoverProps = {
   onOpenChange?: (open: boolean) => void;
   variants?: Variants;
   className?: string;
-} & React.ComponentProps<'div'>;
+} & Omit<React.ComponentProps<'div'>, 'children' | 'className'>;
 
 function MorphingPopover({
   children,
@@ -104,11 +107,19 @@ function MorphingPopover({
   );
 }
 
+function useMorphingPopoverContext(componentName: string) {
+  const context = useContext(MorphingPopoverContext);
+  if (!context) {
+    throw new Error(`${componentName} must be used within MorphingPopover`);
+  }
+  return context;
+}
+
 export type MorphingPopoverTriggerProps = {
   asChild?: boolean;
   children: React.ReactNode;
   className?: string;
-} & React.ComponentProps<typeof motion.button>;
+} & Omit<HTMLMotionProps<'button'>, 'children' | 'className'>;
 
 function MorphingPopoverTrigger({
   children,
@@ -116,18 +127,18 @@ function MorphingPopoverTrigger({
   asChild = false,
   ...props
 }: MorphingPopoverTriggerProps) {
-  const context = useContext(MorphingPopoverContext);
-  if (!context) {
-    throw new Error(
-      'MorphingPopoverTrigger must be used within MorphingPopover'
-    );
-  }
+  const context = useMorphingPopoverContext('MorphingPopoverTrigger');
 
   if (asChild && isValidElement(children)) {
+    // We intentionally treat the child's props as `any` here: the child's
+    // element type isn't statically known, so its prop shape can't be
+    // verified against motion's HTML prop types at compile time. Casting
+    // narrowly (instead of using `unknown`) avoids spreading untyped values
+    // into JSX, which is what previously caused the type errors.
     const MotionComponent = motion.create(
-      children.type as React.ForwardRefExoticComponent<any>
+      children.type as React.ElementType
     );
-    const childProps = children.props as Record<string, unknown>;
+    const childProps = children.props as Record<string, any>;
 
     return (
       <MotionComponent
@@ -165,18 +176,14 @@ function MorphingPopoverTrigger({
 export type MorphingPopoverContentProps = {
   children: React.ReactNode;
   className?: string;
-} & React.ComponentProps<typeof motion.div>;
+} & Omit<HTMLMotionProps<'div'>, 'children' | 'className'>;
 
 function MorphingPopoverContent({
   children,
   className,
   ...props
 }: MorphingPopoverContentProps) {
-  const context = useContext(MorphingPopoverContext);
-  if (!context)
-    throw new Error(
-      'MorphingPopoverContent must be used within MorphingPopover'
-    );
+  const context = useMorphingPopoverContext('MorphingPopoverContent');
 
   const ref = useRef<HTMLDivElement>(null);
   useClickOutside(ref, context.close);
@@ -195,27 +202,25 @@ function MorphingPopoverContent({
   return (
     <AnimatePresence>
       {context.isOpen && (
-        <>
-          <motion.div
-            {...props}
-            ref={ref}
-            layoutId={`popover-trigger-${context.uniqueId}`}
-            key={context.uniqueId}
-            id={`popover-content-${context.uniqueId}`}
-            role='dialog'
-            aria-modal='true'
-            className={cn(
-              'absolute overflow-hidden rounded-md border border-zinc-950/10 bg-white p-2 text-zinc-950 shadow-md dark:border-zinc-50/10 dark:bg-zinc-700 dark:text-zinc-50',
-              className
-            )}
-            initial='initial'
-            animate='animate'
-            exit='exit'
-            variants={context.variants}
-          >
-            {children}
-          </motion.div>
-        </>
+        <motion.div
+          {...props}
+          ref={ref}
+          layoutId={`popover-trigger-${context.uniqueId}`}
+          key={context.uniqueId}
+          id={`popover-content-${context.uniqueId}`}
+          role="dialog"
+          aria-modal="true"
+          className={cn(
+            'absolute overflow-hidden rounded-md border border-zinc-950/10 bg-white p-2 text-zinc-950 shadow-md dark:border-zinc-50/10 dark:bg-zinc-700 dark:text-zinc-50',
+            className
+          )}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          variants={context.variants}
+        >
+          {children}
+        </motion.div>
       )}
     </AnimatePresence>
   );
