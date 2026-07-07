@@ -22,7 +22,7 @@ export default function CarTab({ initialCars }: { initialCars: Car[] }) {
 
       <div className="flex-1 min-h-0 overflow-y-auto p-6 lg:p-8 pt-2">
         <div className="max-w-8xl mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
             {cars.map((car) => (
               <CarCard key={car.car_id} car={car} onUpdate={handleCarUpdate} />
             ))}

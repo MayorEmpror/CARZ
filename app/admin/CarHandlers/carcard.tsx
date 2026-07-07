@@ -1,35 +1,44 @@
 "use client";
 
 import { PencilIcon, StarIcon } from "lucide-react";
+import { FaGasPump, FaCarSide } from "react-icons/fa";
+
 import {
   MorphingPopover,
   MorphingPopoverTrigger,
   MorphingPopoverContent,
 } from "@/components/motion-primitives/morphing-popover";
+
 import type { Car } from "@/lib/types";
 import { useCarEditor } from "../hooks/use-car-editor";
 import { StatusBadge } from "./statusbadge";
 import { CarEditForm } from "./careditform";
 import { cn } from "@/lib/utils";
 
-export function CarCard({ car, onUpdate }: { car: Car; onUpdate: (car: Car) => void }) {
+export function CarCard({
+  car,
+  onUpdate,
+}: {
+  car: Car;
+  onUpdate: (car: Car) => void;
+}) {
   const editor = useCarEditor(car, onUpdate);
 
   return (
     <MorphingPopover
-      transition={{ type: "spring", bounce: 0.05, duration: 0.3 }}
+      transition={{
+        type: "spring",
+        bounce: 0.05,
+        duration: 0.3,
+      }}
       open={editor.isOpen}
       onOpenChange={editor.open}
       className="w-full"
     >
       <MorphingPopoverTrigger
         className={cn(
-          "relative block w-full  h-[420px]  overflow-hidden group text-left border border-white/10 hover:border-white/20 transition-colors",
-          // Hide the trigger while the editor is open instead of letting it
-          // sit visible underneath the content — it still reserves its
-          // height (so the grid cell doesn't collapse/jump), it's just not
-          // seen or clickable anymore.
-          editor.isOpen && "invisible pointer-events-none"
+          "relative block w-full h-[420px] overflow-hidden group text-left border border-white/10  hover:border-white/20 transition-colors",
+          editor.isOpen && "invisible pointer-events-none",
         )}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -39,35 +48,88 @@ export function CarCard({ car, onUpdate }: { car: Car; onUpdate: (car: Car) => v
           className="absolute inset-0 w-full h-full object-cover"
         />
 
+        {/* Overlay */}
         <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors" />
+
         <div className="absolute inset-0 bg-linear-to-t from-[#131318] via-transparent to-[#131318]/70" />
 
         <div className="relative z-10 flex h-full flex-col justify-between p-5">
+          {/* Header */}
           <div className="flex items-start justify-between gap-3">
-            <h3 className="text-white text-2xl font-bold leading-tight truncate min-w-0">
-              {car.make} {car.model}
-            </h3>
+            <div className="min-w-0">
+              <h3 className="text-white text-2xl font-bold leading-tight truncate">
+                {car.make} {car.model}
+              </h3>
+
+              <p className="text-neutral-300 text-sm mt-1">
+                {car.year} • {car.body_type}
+              </p>
+            </div>
+
             <StatusBadge status={car.status} />
           </div>
 
-          <div className="flex items-end justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-white text-2xl font-bold truncate">
-                {car.price}
-                <span className="text-neutral-300 text-base font-normal"> €/day</span>
-              </p>
-              <p className="text-neutral-300 text-sm mt-0.5">{car.year}</p>
+          {/* Bottom content */}
+          <div className="space-y-4">
+            {/* Price + Rating */}
+            <div className="flex items-end justify-between gap-3">
+              <div>
+                <p className="text-white text-2xl font-bold">
+                  {Math.round(Number(car.price) / 1000)}K
+                  <span className="text-neutral-300 text-base font-normal">
+                    {" "}
+                    €/day
+                  </span>
+                </p>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <StarIcon
+                  size={16}
+                  className="fill-yellow-400 text-yellow-400"
+                />
+
+                <span className="text-white text-base">{car.rating}</span>
+
+                <span className="text-neutral-300 text-sm">
+                  ({car.rating_count})
+                </span>
+              </div>
             </div>
 
-            <div className="flex items-center gap-1 shrink-0">
-              <StarIcon size={16} className="fill-yellow-400 text-yellow-400" />
-              <span className="text-white text-base">{car.rating}</span>
-              <span className="text-neutral-300 text-sm">({car.rating_count})</span>
+            {/* Specifications */}
+            <div className="grid grid-cols-3 gap-1 w-full">
+              <div className="rounded-xl flex items-center gap-2 bg-black/30 backdrop-blur-sm p-2">
+                <FaGasPump className="text-neutral-300 shrink-0" size={14} />
+
+                <div>
+                  <p className="text-white text-sm font-medium truncate">
+                    {car.fuel_type}
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-xl flex items-center gap-2 bg-black/30 backdrop-blur-sm p-2 w-fit ">
+                <FaCarSide className="text-neutral-300 shrink-0" size={14} />
+
+                <p className="text-white text-sm font-medium ">
+                  {car.transmission}
+                </p>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
+        {/* Edit hover */}
+        <div
+          className="
+            absolute inset-0 
+            flex items-center justify-center 
+            opacity-0 group-hover:opacity-100 
+            transition-opacity 
+            z-20
+          "
+        >
           <span className="bg-black/70 text-white px-4 py-2 rounded-full flex items-center gap-2">
             <PencilIcon size={14} />
             Edit
@@ -75,7 +137,20 @@ export function CarCard({ car, onUpdate }: { car: Car; onUpdate: (car: Car) => v
         </div>
       </MorphingPopoverTrigger>
 
-      <MorphingPopoverContent className="inset-0 z-30 w-full h-full rounded-2xl border border-white/10 bg-[#131318] p-0 shadow-[0_9px_30px_0px_rgba(0,0,0,0.4)]">
+      {/* Edit Form */}
+      <MorphingPopoverContent
+        className="
+          inset-0 
+          z-30 
+          w-full 
+          h-full 
+          rounded-2xl 
+          border border-white/10 
+          bg-[#131318] 
+          p-0 
+          shadow-[0_9px_30px_0px_rgba(0,0,0,0.4)]
+        "
+      >
         <CarEditForm
           editData={editor.editData}
           setField={editor.setField}
