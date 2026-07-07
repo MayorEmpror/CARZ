@@ -50,3 +50,15 @@ export interface Payment{
   status         :  string   ;
   transaction_ref:  string  ;
 }
+
+
+export type FormState = {
+  owner_id: number;
+  make: string;
+  model: string;
+  year: string;
+  price: string;
+  body_type: string;
+  fuel_type: string;
+  transmission: string;
+};

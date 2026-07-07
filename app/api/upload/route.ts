@@ -13,8 +13,7 @@ export async function POST(req: NextRequest) {
   const buffer = Buffer.from(bytes);
 
   const uploadResult = await new Promise<any>((resolve, reject) => {
-    cloudinary.uploader
-      .upload_stream(
+    cloudinary.uploader.upload_stream(
         { folder: "car-rental" },
         (err, result) => {
           if (err) reject(err);

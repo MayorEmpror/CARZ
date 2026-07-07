@@ -2,7 +2,7 @@
 import { Car } from "@/lib/types";
 import { User } from "@/lib/types";
 import { useState } from "react";
-import CarTab from "./CarHandler";
+import CarTab from "./CarHandlers/CarHandler";
 import CustomerTab from "./CustomersHandler";
 import {OwnerTab} from "./OwnersHandler"
 import AddCar from "./AddCar"
@@ -24,7 +24,7 @@ export default function AdminLayout({
     <div className="flex h-screen bg-black text-white">
       
       {/* SIDEBAR */}
-      <div className="w-64 bg-zinc-900 border-r border-zinc-800 p-4">
+      <div className="w-54 bg-zinc-900 border-r border-zinc-800 p-4">
         <h1 className="text-xl font-bold mb-6">Admin Panel</h1>
 
         <button
@@ -64,7 +64,7 @@ export default function AdminLayout({
       </div>
 
       {/* CONTENT AREA */}
-      <div className="flex-1 p-6">
+      <div className="flex-1 ">
         {activeTab === "cars" && (
           <CarTab initialCars={initialCars} />
         )}

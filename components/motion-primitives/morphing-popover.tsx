@@ -158,6 +158,7 @@ function MorphingPopoverTrigger({
       key={context.uniqueId}
       layoutId={`popover-trigger-${context.uniqueId}`}
       onClick={context.open}
+      className="w-full"
     >
       <motion.button
         {...props}
@@ -211,7 +212,7 @@ function MorphingPopoverContent({
           role="dialog"
           aria-modal="true"
           className={cn(
-            'absolute z-100 overflow-hidden rounded-md border border-zinc-950/10 bg-white p-2 text-zinc-950 shadow-md dark:border-zinc-50/10 dark:bg-zinc-700 dark:text-zinc-50',
+            'absolute z-100 overflow-hidden rounded-md border border-zinc-950/10  p-2 text-zinc-950 shadow-md dark:border-zinc-50/10  dark:text-zinc-50 backdrop-blur-3xl',
             className
           )}
           initial="initial"

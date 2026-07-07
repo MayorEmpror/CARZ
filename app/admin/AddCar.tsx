@@ -1,21 +1,13 @@
 "use client";
 
 import { useState, useRef } from "react";
+import {FormState} from "@/lib/types"
 
 const BODY_TYPES = ["Sedan", "SUV", "Hatchback", "Coupe", "Convertible", "Truck", "Van"];
 const FUEL_TYPES = ["Petrol", "Diesel", "Electric", "Hybrid"];
 const TRANSMISSIONS = ["Automatic", "Manual"];
 
-type FormState = {
-  owner_id: number;
-  make: string;
-  model: string;
-  year: string;
-  price: string;
-  body_type: string;
-  fuel_type: string;
-  transmission: string;
-};
+
 
 type FormErrors = Partial<Record<keyof FormState, string>>;
 
@@ -92,7 +84,7 @@ export default function AddCar() {
     return res.json();
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SubmitEvent) {
     e.preventDefault();
     setStatus("idle");
 
