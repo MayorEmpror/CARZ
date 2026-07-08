@@ -65,19 +65,19 @@ export default function FilterPanel({
   };
 
   return (
-    <aside className="w-64 shrink-0 border-r border-neutral-200 bg-white px-4 py-4">
+    <aside className="w-64 shrink-0 border-r border-white/10 bg-[#131318] px-4 py-4">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold">Filter by</h2>
+        <h2 className="text-sm font-semibold text-white">Filter by</h2>
         <button
           onClick={resetAll}
-          className="text-xs text-neutral-400 hover:text-neutral-700"
+          className="text-xs text-neutral-500 hover:text-neutral-300"
         >
           Reset all ✕
         </button>
       </div>
 
-      <div className="border-b border-neutral-100 pb-3">
-        <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-neutral-400">
+      <div className="border-b border-white/10 pb-3">
+        <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-neutral-500">
           Rental type
         </div>
         <SegmentedControl
@@ -87,8 +87,8 @@ export default function FilterPanel({
         />
       </div>
 
-      <div className="flex items-center justify-between border-b border-neutral-100 py-3">
-        <span className="text-[11px] font-medium uppercase tracking-wide text-neutral-400">
+      <div className="flex items-center justify-between border-b border-white/10 py-3">
+        <span className="text-[11px] font-medium uppercase tracking-wide text-neutral-500">
           Available now only
         </span>
         <ToggleSwitch
@@ -97,8 +97,8 @@ export default function FilterPanel({
         />
       </div>
 
-      <div className="border-b border-neutral-100 py-3">
-        <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-neutral-400">
+      <div className="border-b border-white/10 py-3">
+        <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-neutral-500">
           Price range / hour
         </div>
         <PriceRangeSlider
@@ -109,11 +109,11 @@ export default function FilterPanel({
       </div>
 
       <CollapsibleSection title="Car brand">
-        <p className="text-sm text-neutral-400">All brands</p>
+        <p className="text-sm text-neutral-500">All brands</p>
       </CollapsibleSection>
 
       <CollapsibleSection title="Car model & year">
-        <p className="text-sm text-neutral-400">All models</p>
+        <p className="text-sm text-neutral-500">All models</p>
       </CollapsibleSection>
 
       <CollapsibleSection title="Body type" defaultOpen>
@@ -129,8 +129,8 @@ export default function FilterPanel({
         </div>
       </CollapsibleSection>
 
-      <div className="border-b border-neutral-100 py-3">
-        <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-neutral-400">
+      <div className="border-b border-white/10 py-3">
+        <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-neutral-500">
           Transmission
         </div>
         <SegmentedControl

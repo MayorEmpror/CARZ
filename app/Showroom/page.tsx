@@ -10,7 +10,7 @@ export default async function Home() {
   const cars = await getCars();
   console.log(process.env.HOST)
   return (
-    <div className="flex h-screen flex-col bg-neutral-50">
+    <div className="flex h-screen flex-col bg-black">
       <TopBar />
 
       <div className="flex flex-1 overflow-hidden">

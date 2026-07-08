@@ -1,73 +1,93 @@
 "use client";
 
-import { Heart, MapPin, Star } from "lucide-react";
-import { useState } from "react";
-import   {Car} from "@/lib/types";
-import {
-  formatPrice,
-  getCarDistance,
-  getCarImage,
-  getCarRating,
-} from "@/lib/carDisplay";
+import { StarIcon } from "lucide-react";
+import { FaGasPump, FaCarSide } from "react-icons/fa";
 
-type Props = {
-  car: Car;
-  initiallyFavourited?: boolean;
-};
+import type { Car } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
-export default function CarCard({ car, initiallyFavourited = false }: Props) {
-  const [favourited, setFavourited] = useState(initiallyFavourited);
-  const { rating, reviews } = getCarRating(car);
-  const { meters, minutes } = getCarDistance(car);
-  const isAvailable = car.status?.toLowerCase() === "available";
-
+export default function CarCard({ car }: { car: Car }) {
   return (
-    <div className="group rounded-xl border border-neutral-100 bg-white p-4 transition-shadow hover:shadow-md">
-      <div className="mb-3 flex items-center justify-between text-xs text-neutral-500">
-        <span className="flex items-center gap-1">
-          <MapPin className="h-3.5 w-3.5" />
-          {meters}m ({minutes} min)
-          <span className="mx-1 text-neutral-300">•</span>
-          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-          <span className="text-neutral-700">{rating}</span>
-          <span className="text-neutral-400">({reviews})</span>
-        </span>
+    <div
+      className={cn(
+        "relative block w-full h-[420px] overflow-hidden group text-left border border-white/10 hover:border-white/20 transition-colors",
+      )}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={car.image_url}
+        alt={`${car.make} ${car.model}`}
+        className="absolute inset-0 w-full h-full object-cover"
+      />
 
-        <button
-          onClick={() => setFavourited((f) => !f)}
-          aria-label="Toggle favourite"
-          className="text-neutral-300 hover:text-rose-500"
-        >
-          <Heart
-            className={`h-4 w-4 ${
-              favourited ? "fill-rose-500 text-rose-500" : ""
-            }`}
-          />
-        </button>
-      </div>
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors" />
 
-      <div className="mb-3 flex h-32 items-center justify-center">
-        <img
-          src={getCarImage(car)}
-          alt={`${car.make} ${car.model}`}
-          className="h-full w-auto object-contain transition-transform group-hover:scale-105"
-        />
-      </div>
+      <div className="absolute inset-0 bg-linear-to-t from-[#131318] via-transparent to-[#131318]/70" />
 
-      <div className="flex items-end justify-between">
-        <div>
-          <h3 className="text-sm font-semibold text-neutral-900">
-            {car.make} {car.model}
-          </h3>
-          <p className="text-xs text-neutral-400">
-            {car.year} · {isAvailable ? "Available" : car.status}
-          </p>
+      <div className="relative z-10 flex h-full flex-col justify-between p-5">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="text-white text-2xl font-bold leading-tight truncate">
+              {car.make} {car.model}
+            </h3>
+
+            <p className="text-neutral-300 text-sm mt-1">
+              {car.year} • {car.body_type}
+            </p>
+          </div>
         </div>
-        <div className="text-right">
-          <span className="text-sm font-semibold text-neutral-900">
-            {formatPrice(car.price)}
-          </span>
-          <span className="text-xs text-neutral-400"> / hour</span>
+
+        {/* Bottom content */}
+        <div className="space-y-4">
+          {/* Price + Rating */}
+          <div className="flex items-end justify-between gap-3">
+            <div className="leading-tight">
+              <p className="text-white text-2xl font-bold">
+                {Math.round(Number(car.price) / 100000)}.0
+                <span className="text-neutral-300 text-base font-normal">
+                  {" "}
+                  €/day
+                </span>
+              </p>
+              <p className="text-white/50 text-sm font-medium">
+                {Math.round(Number(car.price) / 1000)}K total
+              </p>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <StarIcon
+                size={16}
+                className="fill-yellow-400 text-yellow-400"
+              />
+              <span className="text-white text-base">{car.rating}</span>
+              <span className="text-neutral-300 text-sm">
+                ({car.rating_count})
+              </span>
+            </div>
+          </div>
+
+          {/* Specifications */}
+          <div className="flex gap-2 w-full">
+            <div className="rounded-xl flex items-center gap-2 bg-stone-700/30 backdrop-blur-sm p-2 w-fit">
+              <FaGasPump className="text-neutral-300 shrink-0" size={14} />
+
+              <div>
+                <p className="text-white text-sm font-medium truncate">
+                  {car.fuel_type}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-xl flex items-center gap-2 bg-stone-700/30 backdrop-blur-sm p-2 w-fit">
+              <FaCarSide className="text-neutral-300 shrink-0" size={14} />
+
+              <p className="text-white text-sm font-medium">
+                {car.transmission}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

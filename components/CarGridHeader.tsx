@@ -10,7 +10,7 @@ export default function CarGridHeader({ count }: { count: number }) {
       </h1>
 
       <div className="flex items-center gap-4 text-sm">
-        <button className="flex items-center gap-1 text-neutral-600 hover:text-neutral-900">
+        <button className="flex items-center gap-1 text-neutral-600 hover:text-neutral-200">
           Closest to me
           <ChevronDown className="h-4 w-4" />
         </button>
