@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Car } from "@/lib/types";
 import { CarCard } from "./carcard";
+import VehiclesHeader from "./CarHeader"
 
 export default function CarTab({ initialCars }: { initialCars: Car[] }) {
   const [cars, setCars] = useState(initialCars);
@@ -14,10 +15,19 @@ export default function CarTab({ initialCars }: { initialCars: Car[] }) {
   return (
     <div className="h-full flex flex-col bg-[#0B0B10]">
       <div className="shrink-0 p-6 lg:p-4 pb-4">
-        <div className="max-w-7xl mx-auto w-full">
-          <h1 className="text-white text-2xl font-semibold">Manage Vehicles</h1>
-          <p className="text-neutral-500 text-sm mt-1">{cars.length} vehicles in the fleet</p>
+       
+       <VehiclesHeader cars={cars}/>
+        {/* <div className="max-w-7xl mx-auto w-full pl-4 flex">
+         <div>
+         <h1 className="text-white text-2xl font-semibold">Manage Vehicles</h1>
+         <p className="text-neutral-500 text-sm mt-1">{cars.length} vehicles in the fleet</p>
+         </div>
+        <div className="items-end ">
+            Sort Me 
         </div>
+        </div> */}
+
+
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto p-6 lg:p-8 pt-2">

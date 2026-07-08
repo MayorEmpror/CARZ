@@ -98,8 +98,8 @@ export function CarCard({
             </div>
 
             {/* Specifications */}
-            <div className="grid grid-cols-3 gap-1 w-full">
-              <div className="rounded-xl flex items-center gap-2 bg-black/30 backdrop-blur-sm p-2">
+            <div className="flex gap-2  w-full">
+              <div className="rounded-xl flex items-center gap-2 bg-stone-700/30 backdrop-blur-sm p-2 w-fit">
                 <FaGasPump className="text-neutral-300 shrink-0" size={14} />
 
                 <div>
@@ -109,13 +109,15 @@ export function CarCard({
                 </div>
               </div>
 
-              <div className="rounded-xl flex items-center gap-2 bg-black/30 backdrop-blur-sm p-2 w-fit ">
+              <div className="rounded-xl flex items-center gap-2 bg-stone-700/30 backdrop-blur-sm p-2 w-fit ">
                 <FaCarSide className="text-neutral-300 shrink-0" size={14} />
 
                 <p className="text-white text-sm font-medium ">
                   {car.transmission}
                 </p>
               </div>
+
+
             </div>
           </div>
         </div>
