@@ -1,5 +1,6 @@
 import React from "react";
 import { Info, User, Briefcase } from "lucide-react";
+import { Car } from "@/lib/types";
 
 /**
  * CarCard
@@ -19,20 +20,30 @@ import { Info, User, Briefcase } from "lucide-react";
  *  - bags: number
  *  - transmission: "Automatic" | "Manual"
  */
-export default function CarCard({ car, onClick } : {any}) {
-  const {
-    make,
-    model,
-    image_url,
-    similarLabel = "Or similar coupe",
-    badge = "Advice of the day",
-    pricePerDay,
-    totalPrice,
-    kmIncluded,
-    passengers = 2,
-    bags = 1,
-    transmission = "Automatic",
-  } = car;
+interface CarCardProps {
+  car: Car;
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
+  similarLabel?: string;
+  badge?: string;
+  pricePerDay?: string;
+  totalPrice?: string;
+  kmIncluded?: string;
+  passengers?: number;
+  bags?: number;
+}
+
+export default function CarCard({
+  car,
+  onClick,
+  similarLabel = "Or similar coupe",
+  badge = "Advice of the day",
+  pricePerDay,
+  totalPrice,
+  kmIncluded,
+  passengers = 2,
+  bags = 1,
+}: CarCardProps) {
+  const { make, model, image_url, transmission } = car;
 
   return (
     <button
@@ -96,6 +107,7 @@ export default function CarCard({ car, onClick } : {any}) {
               € total price
             </p>
           </div>
+
           <p className="text-neutral-300 text-sm font-medium whitespace-nowrap">
             {kmIncluded} km per rental
           </p>
@@ -125,24 +137,37 @@ export default function CarCard({ car, onClick } : {any}) {
 /* ---------------- Demo wrapper (remove if importing CarCard elsewhere) ---------------- */
 
 export function Demo() {
-  const car = {
+  const car: Car = {
+    car_id: 1,
+    owner_id: 1,
     make: "BMW",
     model: "M440 Coupe",
+    year: 2024,
+    price: "159",
+    status: "available",
+    rating: "4.8",
+    rating_count: 132,
     image_url:
       "https://images.unsplash.com/photo-1555215695-3004980ad54e?q=80&w=1200&auto=format&fit=crop",
-    similarLabel: "Or similar coupe",
-    badge: "Advice of the day",
-    pricePerDay: 159,
-    totalPrice: "1,427.84",
-    kmIncluded: 900,
-    passengers: 2,
-    bags: 1,
+    body_type: "Coupe",
+    fuel_type: "Petrol",
     transmission: "Automatic",
+    created_at: new Date(), // Postgres timestamp -> JS Date
   };
 
   return (
     <div className="min-h-screen w-full bg-neutral-950 flex items-center justify-center p-8">
-      <CarCard car={car} onClick={() => {}} />
+      <CarCard
+        car={car}
+        onClick={() => {}}
+        similarLabel="Or similar coupe"
+        badge="Advice of the day"
+        pricePerDay="159"
+        totalPrice="1,427.84"
+        kmIncluded="900"
+        passengers={2}
+        bags={1}
+      />
     </div>
   );
 }

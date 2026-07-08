@@ -72,14 +72,18 @@ export function CarCard({
           {/* Bottom content */}
           <div className="space-y-4">
             {/* Price + Rating */}
+
             <div className="flex items-end justify-between gap-3">
-              <div>
+              <div className="leading-tight">
                 <p className="text-white text-2xl font-bold">
-                  {Math.round(Number(car.price) / 1000)}K
+                  {Math.round(Number(car.price) / 100000)}.0
                   <span className="text-neutral-300 text-base font-normal">
                     {" "}
                     €/day
                   </span>
+                </p>
+                <p className="text-white/50 text-sm font-medium">
+                  {Math.round(Number(car.price) / 1000)}K total
                 </p>
               </div>
 
@@ -88,9 +92,7 @@ export function CarCard({
                   size={16}
                   className="fill-yellow-400 text-yellow-400"
                 />
-
                 <span className="text-white text-base">{car.rating}</span>
-
                 <span className="text-neutral-300 text-sm">
                   ({car.rating_count})
                 </span>
@@ -116,8 +118,6 @@ export function CarCard({
                   {car.transmission}
                 </p>
               </div>
-
-
             </div>
           </div>
         </div>

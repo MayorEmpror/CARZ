@@ -1,25 +1,22 @@
 import { Timestamp } from "next/dist/server/lib/cache-handlers/types";
 
 // Matches the shape returned by GET /api/cars
-export  interface Car {
-    car_id: number;
-    owner_id : number;
-    make: string;
-    model: string;
-    year: number;
-    price: string;
-    status: string;
-    rating: string;
-    rating_count: number;
-    image_url : string;
-    body_type: string;
-    fuel_type: string;
-    transmission : string;
-    created_at : Timestamp;
-   
-  };
-
-
+export interface Car {
+  car_id: number;
+  owner_id: number;
+  make: string;
+  model: string;
+  year: number;
+  price: string;
+  status: string;
+  rating: string;
+  rating_count: number;
+  image_url: string;
+  body_type: string;
+  fuel_type: string;
+  transmission: string;
+  created_at: Date; // was `Timestamp` — Postgres timestamps map to JS Date
+}
 
 export interface User{
   user_id  : number;
