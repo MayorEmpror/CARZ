@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import PriceRangeSlider from "@/components/PriceRangeSlider";
+import { filtersToSearchParams, searchParamsToFilters } from "./carFilters";
 import {
   CheckboxRow,
   CollapsibleSection,
@@ -9,18 +11,8 @@ import {
   ToggleSwitch,
 } from "./FilterPrimitives";
 
-const BODY_TYPES = [
-  "Sedan",
-  "Wagon",
-  "Coupe",
-  "Hatchback",
-  "Pickup",
-  "Sport coupe",
-  "Crossover",
-  "Van",
-];
-
-const FUEL_TYPES = ["Gasoline", "Flex Fuel (E85)", "Diesel", "Hybrid", "Electric", "Hydrogen", "Other"];
+const BODY_TYPES = ["Sedan", "SUV", "Hatchback", "Coupe", "Wagon", "Pickup", "Van", "Crossover"];
+const FUEL_TYPES = ["Petrol", "Diesel", "Hybrid", "Electric", "Hydrogen", "Other"];
 
 export type CarFilters = {
   rentalType: string;
@@ -32,26 +24,42 @@ export type CarFilters = {
 };
 
 export const DEFAULT_FILTERS: CarFilters = {
-  rentalType: "Per hour",
+  rentalType: "Any",
   availableOnly: false,
-  priceRange: [19, 98.5],
-  bodyTypes: ["Sedan", "Coupe", "Hatchback", "Crossover", "Van"],
+  priceRange: [0, 9800000000.5],
+  bodyTypes: [],
+  fuelTypes: [],
   transmission: "Any",
-  fuelTypes: ["Gasoline", "Flex Fuel (E85)", "Electric"],
 };
 
-export default function FilterPanel({
-  onChange,
-}: {
-  onChange?: (filters: CarFilters) => void;
-}) {
-  const [filters, setFilters] = useState<CarFilters>(DEFAULT_FILTERS);
+export default function FilterPanel() {
+
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [filters, setFilters] = useState<CarFilters>(() =>
+    searchParamsToFilters(Object.fromEntries(searchParams.entries()))
+  );
+  
+  
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+
+  const pushToUrl = (next: CarFilters) => {
+    const params = filtersToSearchParams(next);
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+  
 
   const update = (patch: Partial<CarFilters>) => {
     const next = { ...filters, ...patch };
     setFilters(next);
-    onChange?.(next);
+
+    // debounce so the slider doesn't push a URL update on every pixel of drag
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => pushToUrl(next), 300);
   };
+
 
   const toggleInArray = (key: "bodyTypes" | "fuelTypes", value: string) => {
     const set = new Set(filters[key]);
@@ -59,13 +67,14 @@ export default function FilterPanel({
     update({ [key]: Array.from(set) } as Partial<CarFilters>);
   };
 
+
   const resetAll = () => {
     setFilters(DEFAULT_FILTERS);
-    onChange?.(DEFAULT_FILTERS);
+    router.push(pathname, { scroll: false });
   };
 
   return (
-    <aside className="w-64 shrink-0 border-r border-white/10 bg-[#131318] px-4 py-4">
+    <aside className="w-64 shrink-0 border-r border-white/10 bg-[#131318] px-4 py-4 overflow-scroll no-scrollbar">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-white">Filter by</h2>
         <button
@@ -102,8 +111,8 @@ export default function FilterPanel({
           Price range / hour
         </div>
         <PriceRangeSlider
-          min={19}
-          max={98.5}
+          min={0}
+          max={1000000000}
           onChange={(range) => update({ priceRange: range })}
         />
       </div>
