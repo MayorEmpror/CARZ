@@ -42,13 +42,13 @@ export function ToggleSwitch({
     <button
       onClick={() => onChange(!checked)}
       className={`relative h-5 w-9 rounded-full transition-colors ${
-        checked ? "bg-neutral-900" : "bg-neutral-200"
+        checked ? "bg-neutral-700" : "bg-neutral-200"
       }`}
       aria-pressed={checked}
     >
       <span
-        className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${
-          checked ? "translate-x-4" : "translate-x-0.5"
+        className={`absolute top-0.5 h-4 w-4 rounded-full bg-black/50 transition-transform ${
+          checked ? "-translate-x-4" : "translate-x-0"
         }`}
       />
     </button>
