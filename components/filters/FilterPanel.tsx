@@ -4,24 +4,33 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import PriceRangeSlider from "@/components/PriceRangeSlider";
 import { filtersToSearchParams, searchParamsToFilters } from "./carFilters";
+import { CarFilters } from "@/lib/types";
 import {
   CheckboxRow,
   CollapsibleSection,
   SegmentedControl,
   ToggleSwitch,
 } from "./FilterPrimitives";
+import { filter } from "motion/react-client";
 
-const BODY_TYPES = ["Sedan", "SUV", "Hatchback", "Coupe", "Wagon", "Pickup", "Van", "Crossover"];
-const FUEL_TYPES = ["Petrol", "Diesel", "Hybrid", "Electric", "Hydrogen", "Other"];
-
-export type CarFilters = {
-  rentalType: string;
-  availableOnly: boolean;
-  priceRange: [number, number];
-  bodyTypes: string[];
-  transmission: string;
-  fuelTypes: string[];
-};
+const BODY_TYPES = [
+  "Sedan",
+  "SUV",
+  "Hatchback",
+  "Coupe",
+  "Wagon",
+  "Pickup",
+  "Van",
+  "Crossover",
+];
+const FUEL_TYPES = [
+  "Petrol",
+  "Diesel",
+  "Hybrid",
+  "Electric",
+  "Hydrogen",
+  "Other",
+];
 
 export const DEFAULT_FILTERS: CarFilters = {
   rentalType: "Any",
@@ -33,23 +42,19 @@ export const DEFAULT_FILTERS: CarFilters = {
 };
 
 export default function FilterPanel() {
-
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [filters, setFilters] = useState<CarFilters>(() =>
-    searchParamsToFilters(Object.fromEntries(searchParams.entries()))
+    searchParamsToFilters(Object.fromEntries(searchParams.entries())),
   );
-  
-  
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const pushToUrl = (next: CarFilters) => {
     const params = filtersToSearchParams(next);
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
   };
-  
 
   const update = (patch: Partial<CarFilters>) => {
     const next = { ...filters, ...patch };
@@ -60,13 +65,11 @@ export default function FilterPanel() {
     debounceRef.current = setTimeout(() => pushToUrl(next), 300);
   };
 
-
   const toggleInArray = (key: "bodyTypes" | "fuelTypes", value: string) => {
     const set = new Set(filters[key]);
     set.has(value) ? set.delete(value) : set.add(value);
     update({ [key]: Array.from(set) } as Partial<CarFilters>);
   };
-
 
   const resetAll = () => {
     setFilters(DEFAULT_FILTERS);
@@ -111,8 +114,9 @@ export default function FilterPanel() {
           Price range / hour
         </div>
         <PriceRangeSlider
+          value={filters.priceRange}
           min={0}
-          max={1000000000}
+          max={9800000000.5}
           onChange={(range) => update({ priceRange: range })}
         />
       </div>

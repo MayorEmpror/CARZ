@@ -18,6 +18,18 @@ export interface Car {
   created_at: Date; // was `Timestamp` — Postgres timestamps map to JS Date
 }
 
+
+export type CarFilters = {
+  rentalType: string;
+  availableOnly: boolean;
+  priceRange: [number, number];
+  bodyTypes: string[];
+  transmission: string;
+  fuelTypes: string[];
+};
+
+
+
 export interface User{
   user_id  : number;
   full_name  : string;

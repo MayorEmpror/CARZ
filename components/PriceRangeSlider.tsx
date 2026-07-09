@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 type Props = {
   min: number;
   max: number;
+  value: [number, number];
   onChange?: (range: [number, number]) => void;
 };
 
@@ -14,7 +15,7 @@ const BAR_HEIGHTS = [
   10, 20, 30, 45, 60, 40, 20,
 ];
 
-export default function PriceRangeSlider({ min, max, onChange }: Props) {
+export default function PriceRangeSlider({ min, max, value, onChange }: Props) {
   const [range, setRange] = useState<[number, number]>([min, max]);
 
   const handleChange = (next: [number, number]) => {
@@ -59,7 +60,7 @@ export default function PriceRangeSlider({ min, max, onChange }: Props) {
           type="range"
           min={min}
           max={max}
-          value={range[0]}
+          value={value[0]}
           onChange={(e) => {
             const val = Math.min(Number(e.target.value), range[1] - 1);
             handleChange([val, range[1]]);
@@ -67,11 +68,12 @@ export default function PriceRangeSlider({ min, max, onChange }: Props) {
           className="range-thumb pointer-events-none absolute h-5 w-full appearance-none bg-transparent"
           style={{ zIndex: minPct > 90 ? 5 : 3 }}
         />
+
         <input
           type="range"
           min={min}
           max={max}
-          value={range[1]}
+          value={value[1]}
           onChange={(e) => {
             const val = Math.max(Number(e.target.value), range[0] + 1);
             handleChange([range[0], val]);
