@@ -1,16 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import type { Car_Perf } from "@/lib/types";
+import type { Named_Car_Perf } from "@/lib/types";
 import { MoreHorizontal, Gauge, Fuel, Wrench, Zap } from "lucide-react";
 import { Plus } from "lucide-react";
 
 type Props = {
-  initialPerfMetric: Car_Perf[];
+  initialPerfMetric: Named_Car_Perf[];
 };
 
-export default function CarTab({ initialPerfMetric }: Props) {
-  const [cars] = useState<Car_Perf[]>(initialPerfMetric);
+export default function PerfTab({ initialPerfMetric }: Props) {
+  const [cars] = useState<Named_Car_Perf[]>(initialPerfMetric);
   const [hoveredId, setHoveredId] = useState<number | null>(null);
 
   return (
@@ -87,7 +87,7 @@ function PerformanceCard({
   onHover,
   onLeave,
 }: {
-  perf: Car_Perf;
+  perf: Named_Car_Perf;
   index: number;
   hovered: boolean;
   onHover: () => void;
@@ -118,13 +118,13 @@ function PerformanceCard({
         <div className="flex items-center gap-4">
 
           <span className="text-neutral-600 text-sm">
-            #{index}
+            {index}
           </span>
 
 
           <div>
             <p className="font-mono text-sm text-neutral-400">
-              car_{perf.car_id}
+              {perf.brand+  " " + perf.car_name}
             </p>
 
             <p className="text-xs text-neutral-500 mt-1">

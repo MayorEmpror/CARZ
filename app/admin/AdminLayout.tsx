@@ -1,7 +1,7 @@
 "use client";
 import { Car } from "@/lib/types";
 import { User } from "@/lib/types";
-import {Car_Perf} from "@/lib/types"
+import {Named_Car_Perf} from "@/lib/types"
 import { useState } from "react";
 import CarTab from "./CarHandlers/CarHandler";
 import CustomerTab from "./CustomersHandler";
@@ -123,7 +123,7 @@ export default function AdminLayout({
   initialCars: Car[];
   initialCust: User[];
   initialOnwers: User[];
-  initialPerfMetric: Car_Perf[];
+  initialPerfMetric: Named_Car_Perf[];
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("cars");
 

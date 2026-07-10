@@ -1,4 +1,5 @@
 import { Timestamp } from "next/dist/server/lib/cache-handlers/types";
+import { Inter_Tight } from "next/font/google";
 
 // Matches the shape returned by GET /api/cars
 export interface Car {
@@ -53,6 +54,11 @@ export  interface Car_Perf{
     fuel_efficiency : number;          
     created_at : Timestamp;
   }
+
+export interface Named_Car_Perf extends Car_Perf{ 
+   car_name : string;
+   brand? : string;
+}
 
 export type CarDetails = Car & Car_Perf;
 
