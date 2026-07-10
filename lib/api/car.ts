@@ -37,3 +37,14 @@ export async function editCars(id: number, data : Partial<Car>): Promise<Car> {
     return res.json();
 }
 
+
+export async function getwithoutperf(): Promise<Car[]>{
+    const res = await fetch(`${process.env.HOST}/api/without-perf`,{
+        cache: "no-store"
+    });
+    if(!res.ok){
+        console.log("Failed to fetch car performance")
+        throw new Error("Failed to fetch car performance");
+    }
+    return res.json()
+}

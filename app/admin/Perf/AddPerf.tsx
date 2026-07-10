@@ -1,14 +1,14 @@
-"use client";
-
 import { useState } from "react";
 import type { Named_Car_Perf } from "@/lib/types";
 import { Field, inputClass, PerfModalShell } from "./PerfModalShell";
+import { Car } from "@/lib/types";
 
 type NewPerfData = Omit<Partial<Named_Car_Perf>, "car_id" | "created_at">;
 
 type AddPerfFormProps = {
   onCancel: () => void;
   onSave: () => void;
+  carwithoutperf: Car[];
 };
 
 const EMPTY: NewPerfData = {
@@ -22,10 +22,14 @@ const EMPTY: NewPerfData = {
   acceleration_0_100: undefined,
 };
 
-export function AddPerfForm({ onCancel, onSave }: AddPerfFormProps) {
+export function AddPerfForm({ onCancel, onSave,carwithoutperf }: AddPerfFormProps) {
   const [data, setData] = useState<NewPerfData>(EMPTY);
+  const [Carwithoutperf] = useState<Car[]>(carwithoutperf)
 
-  function setField<K extends keyof NewPerfData>(field: K, value: NewPerfData[K]) {
+  function setField<K extends keyof NewPerfData>(
+    field: K,
+    value: NewPerfData[K],
+  ) {
     setData((prev) => ({ ...prev, [field]: value }));
   }
 
@@ -66,12 +70,18 @@ export function AddPerfForm({ onCancel, onSave }: AddPerfFormProps) {
       >
         <div className="grid grid-cols-2 gap-3">
           <Field label="Brand">
-            <input
+            <select
               value={data.brand ?? ""}
               onChange={(e) => setField("brand", e.target.value)}
               className={inputClass}
-              placeholder="Toyota"
-            />
+            >
+              <option value="">Select a brand</option>
+              {Carwithoutperf.map((brand, key) => (
+                <option key={key} value={String(brand.make)}>
+                  {String(brand.make)}
+                </option>
+              ))}
+            </select>
           </Field>
           <Field label="Model">
             <input
@@ -95,7 +105,9 @@ export function AddPerfForm({ onCancel, onSave }: AddPerfFormProps) {
           <Field label="Fuel efficiency">
             <input
               value={data.fuel_efficiency ?? ""}
-              onChange={(e) => setField("fuel_efficiency", Number(e.target.value))}
+              onChange={(e) =>
+                setField("fuel_efficiency", Number(e.target.value))
+              }
               className={inputClass}
               placeholder="14 km/l"
             />
@@ -135,7 +147,9 @@ export function AddPerfForm({ onCancel, onSave }: AddPerfFormProps) {
               type="number"
               step="0.1"
               value={data.acceleration_0_100 ?? ""}
-              onChange={(e) => setField("acceleration_0_100", Number(e.target.value))}
+              onChange={(e) =>
+                setField("acceleration_0_100", Number(e.target.value))
+              }
               className={inputClass}
             />
           </Field>

@@ -1,18 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import type { Named_Car_Perf } from "@/lib/types";
+import type { Named_Car_Perf, Car } from "@/lib/types";
 import { MoreHorizontal, Gauge, Fuel, Wrench, Zap, Plus } from "lucide-react";
 import { AddPerfForm } from "./AddPerf";
 import { EditPerfForm } from "./EditPerfForm";
 
+
 type Props = {
   initialPerfMetric: Named_Car_Perf[];
+  withoutperf: Car[];
 };
 
-export default function PerfTab({ initialPerfMetric }: Props) {
+export default function PerfTab({ initialPerfMetric, withoutperf}: Props) {
   const [cars] = useState<Named_Car_Perf[]>(initialPerfMetric);
   const [hoveredId, setHoveredId] = useState<number | null>(null);
+
 
   const [addOpen, setAddOpen] = useState(false);
   const [editingPerf, setEditingPerf] = useState<Named_Car_Perf | null>(null);
@@ -54,7 +57,9 @@ export default function PerfTab({ initialPerfMetric }: Props) {
       )}
 
       {addOpen && (
-        <AddPerfForm onCancel={() => setAddOpen(false)} onSave={() => setAddOpen(false)} />
+        <AddPerfForm
+         carwithoutperf = {withoutperf}
+         onCancel={() => setAddOpen(false)} onSave={() => setAddOpen(false)} />
       )}
 
       {editingPerf && (

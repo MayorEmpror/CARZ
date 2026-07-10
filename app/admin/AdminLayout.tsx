@@ -119,11 +119,13 @@ export default function AdminLayout({
   initialCust,
   initialOnwers,
   initialPerfMetric,
+  withoutperf
 }: {
   initialCars: Car[];
   initialCust: User[];
   initialOnwers: User[];
   initialPerfMetric: Named_Car_Perf[];
+  withoutperf : Car[]
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("cars");
 
@@ -146,7 +148,7 @@ export default function AdminLayout({
           {activeTab === "customers" &&  <CustomerTab initialCustomers={initialCust} /> }
           {activeTab === "owners" &&  <OwnerTab initialOnwers={initialOnwers} />}
           {activeTab === "addcar" && <AddCar />}
-          {activeTab === "Performance" && <PerformanceHandler  initialPerfMetric={initialPerfMetric} />}
+          {activeTab === "Performance" && <PerformanceHandler withoutperf={withoutperf}  initialPerfMetric={initialPerfMetric} />}
         </div>
       </div>
     </div>
