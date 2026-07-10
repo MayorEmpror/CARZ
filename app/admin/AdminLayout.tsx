@@ -8,7 +8,7 @@ import CustomerTab from "./CustomersHandler";
 import { OwnerTab } from "./OwnersHandler";
 import AddCar from "./AddCar";
 import Sidebar from "./sidebar"
-import PerformanceHandler from "./PerfHandler"
+import PerformanceHandler from "./Perf/PerfHandler"
 
 
 import {
