@@ -1,12 +1,16 @@
 "use client";
 import { Car } from "@/lib/types";
 import { User } from "@/lib/types";
+import {Car_Perf} from "@/lib/types"
 import { useState } from "react";
 import CarTab from "./CarHandlers/CarHandler";
 import CustomerTab from "./CustomersHandler";
 import { OwnerTab } from "./OwnersHandler";
 import AddCar from "./AddCar";
 import Sidebar from "./sidebar"
+import PerformanceHandler from "./PerfHandler"
+
+
 import {
   Menu,
   Car as CarIcon,
@@ -16,7 +20,7 @@ import {
   Check,
 } from "lucide-react";
 
-type Tab = "cars" | "customers" | "owners" | "addcar";
+type Tab = "cars" | "customers" | "owners" | "addcar" | "Performance";
 
 /* ---------------- TOP NAVBAR ---------------- */
 function TopNavbar() {
@@ -114,10 +118,12 @@ export default function AdminLayout({
   initialCars,
   initialCust,
   initialOnwers,
+  initialPerfMetric,
 }: {
   initialCars: Car[];
   initialCust: User[];
   initialOnwers: User[];
+  initialPerfMetric: Car_Perf[];
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("cars");
 
@@ -137,15 +143,10 @@ export default function AdminLayout({
         {/* CONTENT AREA */}
         <div className="flex-1 overflow-y-auto">
           {activeTab === "cars" && <CarTab initialCars={initialCars} />}
-
-          {activeTab === "customers" && (
-            <CustomerTab initialCustomers={initialCust} />
-          )}
-
-          {activeTab === "owners" && (
-            <OwnerTab initialOnwers={initialOnwers} />
-          )}
+          {activeTab === "customers" &&  <CustomerTab initialCustomers={initialCust} /> }
+          {activeTab === "owners" &&  <OwnerTab initialOnwers={initialOnwers} />}
           {activeTab === "addcar" && <AddCar />}
+          {activeTab === "Performance" && <PerformanceHandler  initialPerfMetric={initialPerfMetric} />}
         </div>
       </div>
     </div>

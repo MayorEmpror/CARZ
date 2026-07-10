@@ -5,17 +5,19 @@ import {
   Users,
   UserCog,
   PlusCircle,
+  ClipboardPen,
   Settings,
   LogOut,
 } from "lucide-react";
 
-type Tab = "cars" | "customers" | "owners" | "addcar";
+type Tab = "cars" | "customers" | "owners" | "addcar" | "Performance";
 
 const navItems: { tab: Tab; label: string; icon: React.ElementType }[] = [
   { tab: "cars", label: "Cars", icon: Car },
   { tab: "customers", label: "Customers", icon: Users },
   { tab: "owners", label: "Owners", icon: UserCog },
   { tab: "addcar", label: "Add Car", icon: PlusCircle },
+  { tab: "Performance", label: "Performance", icon: ClipboardPen },
 ];
 
 function NavButton({

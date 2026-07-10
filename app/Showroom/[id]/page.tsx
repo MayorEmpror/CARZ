@@ -161,14 +161,14 @@ export default async function CarDetails({
         {/* Left column */}
         <div className="lg:col-span-2 flex flex-col gap-6">
           {/* Hero */}
-          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-b from-neutral-800 to-neutral-900 h-[360px] border border-white/5">
+          <div className="relative rounded-2xl overflow-hidden bg-linear-to-b from-neutral-800 to-neutral-900 h-[360px] border border-white/5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={image_url}
               alt={`${make} ${model}`}
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/0 to-transparent" />
             <span
               className={`absolute top-5 left-5 px-3 py-1 rounded-full text-xs font-medium ${
                 status === "Available"
@@ -210,7 +210,7 @@ export default async function CarDetails({
               </div>
               <div className="h-2 rounded-full bg-neutral-800 mt-3 overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-yellow-400 to-green-400"
+                  className="h-full rounded-full bg-linear-to-r from-yellow-400 to-green-400"
                   style={{ width: `${efficiencyPct}%` }}
                 />
               </div>
