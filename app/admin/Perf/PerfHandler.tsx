@@ -92,9 +92,7 @@ function PerformanceCard({
     <div
       onMouseEnter={onHover}
       onMouseLeave={onLeave}
-      className={`rounded-xl border border-zinc-800 p-4 transition ${
-        hovered ? "bg-zinc-900" : "bg-zinc-950"
-      }`}
+      className={`rounded-xl border border-zinc-800 p-4 transition bg-zinc-950`}
     >
       {/* Top section */}
       <div className="flex items-center justify-between mb-4">

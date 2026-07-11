@@ -125,10 +125,10 @@ export default function AddCar() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0E11] text-[#E8EAED] flex items-center justify-center p-6">
+    <div className=" bg-black text-[#E8EAED] flex items-center justify-center p-6">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-md bg-[#14181C] border border-white/5 rounded-2xl p-6 space-y-5 shadow-2xl"
+        className="w-full max-w-md bg-[#0f1214] border border-white/5 rounded-2xl p-6 space-y-5 shadow-2xl"
       >
         <div>
           <h1 className="text-lg font-semibold">List a car</h1>
