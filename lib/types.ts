@@ -75,7 +75,7 @@ export interface Payment{
 }
 
 
-export type FormState = {
+export type AddCarFormState = {
   owner_id: number;
   make: string;
   model: string;
@@ -84,4 +84,26 @@ export type FormState = {
   body_type: string;
   fuel_type: string;
   transmission: string;
+ 
 };
+
+export interface CustomRes {
+  success : boolean;
+  message : string;
+}
+
+
+export interface AddCarFormData extends AddCarFormState{
+   url: URL,
+}
+
+export interface AddPerfFormData{
+    car_id : number;
+    mileage : number;
+    top_speed : number;
+    acceleration_0_100 : number;    
+    engine_power : number;          
+    torque : number;                   
+    fuel_efficiency : number;          
+
+}

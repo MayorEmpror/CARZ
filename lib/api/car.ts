@@ -1,5 +1,8 @@
 import {Car} from "@/lib/types"
 import { CarDetails } from "@/lib/types";
+import { AddCarFormData} from "@/lib/types"
+import { CustomRes } from "@/lib/types";
+
 
 export async function getCars(): Promise<Car[]> {
     const res = await fetch(`${process.env.HOST}/api/cars`, {
@@ -48,3 +51,44 @@ export async function getwithoutperf(): Promise<Car[]>{
     }
     return res.json()
 }
+
+
+
+export async function Addcars(data: AddCarFormData): Promise<CustomRes> {
+    try {
+      const res = await fetch("/api/cars", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          owner_id: data.owner_id,
+          make: data.make.trim(),
+          model: data.model.trim(),
+          year: Number(data.year),
+          price: Number(data.price),
+          body_type: data.body_type,
+          fuel_type: data.fuel_type,
+          transmission: data.transmission,
+          image_url: data.url,
+        }),
+      });
+  
+      if (!res.ok) {
+        // try to surface the server's error message, if any
+        const errorBody = await res.json().catch(() => null);
+        return {
+          success: false,
+          message: errorBody?.message ?? "Failed to create listing",
+        };
+      }
+  
+      return {
+        success: true,
+        message: "Car added successfully",
+      };
+    } catch(err) {
+      return {
+        success: false,
+        message: "Network error",
+      };
+    }
+  }

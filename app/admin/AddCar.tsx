@@ -1,17 +1,16 @@
 "use client";
 
 import { useState, useRef } from "react";
-import {FormState} from "@/lib/types"
+import { AddCarFormState } from "@/lib/types";
+import { Addcars } from "@/lib/api/car"; // adjust path to match your project
 
 const BODY_TYPES = ["Sedan", "SUV", "Hatchback", "Coupe", "Convertible", "Truck", "Van"];
 const FUEL_TYPES = ["Petrol", "Diesel", "Electric", "Hybrid"];
 const TRANSMISSIONS = ["Automatic", "Manual"];
 
+type FormErrors = Partial<Record<keyof AddCarFormState, string>>;
 
-
-type FormErrors = Partial<Record<keyof FormState, string>>;
-
-const initialForm: FormState = {
+const initialForm: AddCarFormState = {
   owner_id: 1, // TODO: replace with authenticated user id
   make: "",
   model: "",
@@ -25,14 +24,14 @@ const initialForm: FormState = {
 export default function AddCar() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [form, setForm] = useState<FormState>(initialForm);
+  const [form, setForm] = useState<AddCarFormState>(initialForm);
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [statusMessage, setStatusMessage] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
+  function updateField<K extends keyof AddCarFormState>(key: K, value: AddCarFormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
     if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
   }
@@ -84,7 +83,7 @@ export default function AddCar() {
     return res.json();
   }
 
-  async function handleSubmit(e: React.SubmitEvent) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setStatus("idle");
 
@@ -103,26 +102,16 @@ export default function AddCar() {
     try {
       const upload = await uploadImage(file);
 
-      const res = await fetch("/api/cars", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          owner_id: form.owner_id,
-          make: form.make.trim(),
-          model: form.model.trim(),
-          year: Number(form.year),
-          price: Number(form.price),
-          body_type: form.body_type,
-          fuel_type: form.fuel_type,
-          transmission: form.transmission,
-          image_url: upload.url,
-        }),
-      });
+      const result = await Addcars({ ...form, url: upload.url });
 
-      if (!res.ok) throw new Error("Failed to create listing");
+      if (!result.success) {
+        setStatus("error");
+        setStatusMessage(result.message);
+        return;
+      }
 
       setStatus("success");
-      setStatusMessage("Car added successfully.");
+      setStatusMessage(result.message);
       setForm(initialForm);
       setFile(null);
       setPreview(null);

@@ -1,9 +1,8 @@
 import { useState } from "react";
 import type { Named_Car_Perf } from "@/lib/types";
 import { Field, inputClass, PerfModalShell } from "./PerfModalShell";
-import { Car } from "@/lib/types";
-
-type NewPerfData = Omit<Partial<Named_Car_Perf>, "car_id" | "created_at">;
+import { Car, AddPerfFormData } from "@/lib/types";
+import { AddCarPerformance } from "@/lib/api/carperf";
 
 type AddPerfFormProps = {
   onCancel: () => void;
@@ -11,31 +10,61 @@ type AddPerfFormProps = {
   carwithoutperf: Car[];
 };
 
-const EMPTY: NewPerfData = {
-  brand: "",
-  car_name: "",
-  mileage: undefined,
+const EMPTY: AddPerfFormData = {
+  car_id: 0,
+  mileage: 0,
   fuel_efficiency: 0,
-  engine_power: undefined,
-  top_speed: undefined,
-  torque: undefined,
-  acceleration_0_100: undefined,
+  engine_power: 0,
+  top_speed: 0,
+  torque: 0,
+  acceleration_0_100: 0,
 };
 
-export function AddPerfForm({ onCancel, onSave,carwithoutperf }: AddPerfFormProps) {
-  const [data, setData] = useState<NewPerfData>(EMPTY);
-  const [Carwithoutperf] = useState<Car[]>(carwithoutperf)
+export function AddPerfForm({ onCancel, onSave, carwithoutperf }: AddPerfFormProps) {
+  const [data, setData] = useState<AddPerfFormData>(EMPTY);
+  const [carsWithoutPerf] = useState<Car[]>(carwithoutperf);
+  const [submitting, setSubmitting] = useState(false);
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const [statusMessage, setStatusMessage] = useState("");
 
-  function setField<K extends keyof NewPerfData>(
+  function setField<K extends keyof AddPerfFormData>(
     field: K,
-    value: NewPerfData[K],
+    value: AddPerfFormData[K],
   ) {
     setData((prev) => ({ ...prev, [field]: value }));
   }
 
-  function handleSave() {
-    // Frontend only — wire this up to a real create call later.
-    onSave();
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setStatus("idle");
+    console.log(data);
+
+    if (!data.car_id) {
+      setStatus("error");
+      setStatusMessage("Select a car before saving.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const result = await AddCarPerformance(data);
+
+      if (!result.success) {
+        setStatus("error");
+        setStatusMessage(result.message);
+        return;
+      }
+
+      setStatus("success");
+      setStatusMessage(result.message);
+      setData(EMPTY);
+      onSave();
+    } catch (err) {
+      setStatus("error");
+      setStatusMessage(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -47,49 +76,45 @@ export function AddPerfForm({ onCancel, onSave,carwithoutperf }: AddPerfFormProp
           <button
             type="button"
             onClick={onCancel}
-            className="text-sm text-neutral-400 hover:text-white transition-colors px-3 py-2"
+            disabled={submitting}
+            className="text-sm text-neutral-400 hover:text-white transition-colors px-3 py-2 disabled:opacity-60"
           >
             Cancel
           </button>
           <button
-            type="button"
-            onClick={handleSave}
-            className="bg-violet-300 hover:bg-violet-400 text-black text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            type="submit"
+            form="add-perf-form"
+            disabled={submitting}
+            className="bg-violet-300 hover:bg-violet-400 text-black text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Add record
+            {submitting ? "Adding…" : "Add record"}
           </button>
         </>
       }
     >
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleSave();
-        }}
-        className="space-y-3 pb-5"
-      >
+      <form id="add-perf-form" onSubmit={handleSubmit} className="space-y-3 pb-5">
+        {status === "error" && (
+          <p className="text-xs text-red-400 bg-red-950/40 border border-red-900/50 rounded-lg px-3 py-2">
+            {statusMessage}
+          </p>
+        )}
+
         <div className="grid grid-cols-2 gap-3">
           <Field label="Brand">
             <select
-              value={data.brand ?? ""}
-              onChange={(e) => setField("brand", e.target.value)}
+              value={data.car_id || ""}
+              onChange={(e) => setField("car_id", Number(e.target.value))}
               className={inputClass}
             >
-              <option value="">Select a brand</option>
-              {Carwithoutperf.map((brand, key) => (
-                <option key={key} value={String(brand.make)}>
-                  {String(brand.make)}
+              <option value="" disabled>
+                Select a brand
+              </option>
+              {carsWithoutPerf.map((brand) => (
+                <option key={brand.car_id} value={brand.car_id}>
+                  {brand.make}
                 </option>
               ))}
             </select>
-          </Field>
-          <Field label="Model">
-            <input
-              value={data.car_name ?? ""}
-              onChange={(e) => setField("car_name", e.target.value)}
-              className={inputClass}
-              placeholder="Supra"
-            />
           </Field>
         </div>
 
@@ -104,6 +129,7 @@ export function AddPerfForm({ onCancel, onSave,carwithoutperf }: AddPerfFormProp
           </Field>
           <Field label="Fuel efficiency">
             <input
+              type="number"
               value={data.fuel_efficiency ?? ""}
               onChange={(e) =>
                 setField("fuel_efficiency", Number(e.target.value))
