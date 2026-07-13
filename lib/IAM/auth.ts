@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import pool from "../db";
 
+
 interface RegisterUserInput {
   fullName: string;
   email: string;
@@ -84,4 +85,67 @@ export async function registerUser(
   );
 
   return result.rows[0];
+}
+
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  success: boolean;
+  message: string;
+}
+
+export async function loginHandler(
+  data: LoginRequest
+): Promise<LoginResponse> {
+  const { email, password } = data;
+
+  if (!email || !password) {
+    return {
+      success: false,
+      message: "Email and password are required.",
+    };
+  }
+
+  const result = await pool.query(
+    `
+   SELECT 
+      user_id,
+      email,
+      password_hash,
+      role
+    FROM users
+    WHERE email = $1
+    `,
+    [email]
+  );
+
+  if (result.rowCount === 0) {
+    return {
+      success: false,
+      message: "Invalid email or password.",
+    };
+  }
+
+  const user = result.rows[0];
+
+  // Plain text comparison (only if passwords are stored as plain text)
+  const passwordMatch = await bcrypt.compare(
+    password,
+    user.password_hash
+);
+
+if (!passwordMatch) {
+    return {
+        success: false,
+        message: "Invalid email or password."
+    };
+}
+  return {
+    success: true,
+    message: "Login successful.",
+  };
 }
