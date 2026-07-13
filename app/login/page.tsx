@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 type FieldErrors = Partial<{
   email: string;
@@ -13,6 +14,8 @@ export default function Login() {
   >("idle");
   const [serverMessage, setServerMessage] = useState<string | null>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
+  const router = useRouter();
+
 
   function validate(data: Record<string, string>): FieldErrors {
     const next: FieldErrors = {};
@@ -78,8 +81,11 @@ export default function Login() {
 
       setStatus("success");
       setServerMessage(result?.message ?? "Logged in successfully.");
-
       formElement.reset();
+      router.push("/showroom");
+      router.refresh();
+
+
 
       // TODO:
       // Save JWT / session

@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import pool from "../db";
+import { randomUUID } from "crypto";
 
 
 interface RegisterUserInput {
@@ -96,6 +97,7 @@ export interface LoginRequest {
 export interface LoginResponse {
   success: boolean;
   message: string;
+  sessionId? : string ;
 }
 
 export async function loginHandler(
@@ -144,8 +146,25 @@ if (!passwordMatch) {
         message: "Invalid email or password."
     };
 }
+ const sessionId = randomUUID();
+ await pool.query(
+  `
+  INSERT INTO sessions(
+      session_id,
+      user_id,
+      expires_at
+  )
+  VALUES($1,$2,$3)
+  `,
+  [
+      sessionId,
+      user.user_id,
+      new Date(Date.now() + 1000 * 60 * 60 * 24 * 7)
+  ]
+  );
   return {
     success: true,
     message: "Login successful.",
+    sessionId : sessionId
   };
 }

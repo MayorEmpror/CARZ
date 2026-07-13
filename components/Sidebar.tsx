@@ -13,6 +13,8 @@ import {
   LogOut,
 } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+
 
 const NAV_ITEMS = [
   { label: "Home", icon: Home },
@@ -32,6 +34,27 @@ const FOOTER_ITEMS = [
 
 export default function Sidebar() {
   const [active, setActive] = useState("Vehicles");
+  const router = useRouter();
+
+  async function handleLogout(){
+
+    const response = await fetch(
+        "/api/auth/logout",
+        {
+            method:"POST"
+        }
+    );
+
+
+    const result = await response.json();
+
+
+    if(result.success){
+      router.push("/login");
+      router.refresh();
+    }
+
+}
 
   return (
     <aside className="flex h-full w-44 shrink-0 flex-col justify-between border-r border-white/10 bg-[#131318] py-4">
@@ -58,6 +81,7 @@ export default function Sidebar() {
       <nav className="flex flex-col gap-0.5 px-3">
         {FOOTER_ITEMS.map(({ label, icon: Icon }) => (
           <button
+            onClick={label === "Logout"? handleLogout:  undefined}
             key={label}
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-400 hover:bg-white/5 hover:text-neutral-200"
           >

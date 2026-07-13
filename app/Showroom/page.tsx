@@ -6,7 +6,8 @@ import { searchParamsToFilters } from "@/components/filters/carFilters";
 import TopBar from "@/components/TopBar";
 import Sidebar from "@/components/Sidebar";
 import CarGridHeader from "@/components/CarGridHeader";
-import  {getCars} from "@/lib/api/car"
+import { requireUser } from "@/lib/IAM/validators";
+
 
 
 export default async function ShoroomPage({
@@ -17,10 +18,11 @@ export default async function ShoroomPage({
   const sp = await searchParams;
   const filters = searchParamsToFilters(sp);
   const cars = await getFilteredCars(filters);
+  const user = await requireUser();
 
   return (
     <div className="flex h-screen flex-col bg-black">
-      <TopBar />
+      <TopBar user={user} />
 
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />

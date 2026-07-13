@@ -1,9 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {User} from "@/lib/types"
 import { Crown, MapPin } from "lucide-react";
 
-export default function TopBar() {
+interface Data{
+  user : User
+}
+
+export default function TopBar({user} : Data) {
   const [time, setTime] = useState<string>("");
 
   useEffect(() => {
@@ -36,7 +41,7 @@ export default function TopBar() {
         </span>
         <span className="flex items-center gap-1">
           <MapPin className="h-3.5 w-3.5" />
-          San Francisco, US
+          {user.full_name}
         </span>
       </div>
 
