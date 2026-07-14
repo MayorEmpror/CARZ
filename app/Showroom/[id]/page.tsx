@@ -104,15 +104,16 @@ export default async function CarDetails({
     engine_power,
     torque,
     fuel_efficiency,
+    model_path,
   } = carperf;
 
   const score = computeScore({ top_speed, acceleration_0_100, engine_power, torque });
   const label = scoreLabel(score);
   const efficiencyPct = Math.min((fuel_efficiency / 50) * 100, 100);
-
+  
   return (
     <div className="min-h-screen relative overflow-hidden pointer-events-none bg-[#0B0B10]">
-      <CarModelViewer />
+      <CarModelViewer modelUrl={model_path}/>
 
       {/* Top nav */}
       <div className="relative z-10 flex items-center justify-between px-8 py-6 pointer-events-auto">

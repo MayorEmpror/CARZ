@@ -160,10 +160,15 @@ export function CarCard({
           preview={editor.preview}
           fileInputRef={editor.fileInputRef}
           onSelectFile={editor.selectFile}
+          modelFile={editor.modelFile}
+          modelInputRef={editor.modelInputRef}
+          onSelectModel={editor.selectModel}
           saving={editor.saving}
           uploading={editor.uploading}
           onSave={editor.save}
           onCancel={() => editor.open(false)}
+
+
         />
       </MorphingPopoverContent>
     </MorphingPopover>

@@ -13,6 +13,7 @@ export interface Car {
   rating: string;
   rating_count: number;
   image_url: string;
+  model_path:string;
   body_type: string;
   fuel_type: string;
   transmission: string;

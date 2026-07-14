@@ -10,12 +10,17 @@ import {
   MeshReflectorMaterial,
 } from "@react-three/drei";
 
-function CarModel({ url }: { url: string }) {
+function CarModel({ url }: { url?: string }) {
+  if (!url) {
+    return null;
+  }
+
   const { scene } = useGLTF(url);
+
   return <primitive object={scene} />;
 }
 
-useGLTF.preload("/models/bmw_7-series_m_short.glb");
+// useGLTF.preload("/models/bmw_7-series_m_short.glb");
 
 function Loader() {
   return (
@@ -49,8 +54,9 @@ function ReflectiveGround() {
   );
 }
 
+
 export default function CarModelViewer({
-  modelUrl = "/models/bmw_7-series_m_short.glb",
+  modelUrl = " "
 }: {
   modelUrl?: string;
 }) {

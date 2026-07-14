@@ -23,8 +23,9 @@ export async function PUT(
       rating,
       rating_count,
       image_url,
+      model_path,
     } = body;
-
+   
     const carId = Number(id);
 
     if (isNaN(carId)) {
@@ -36,36 +37,38 @@ export async function PUT(
 
     const { rows } = await db.query(
       `UPDATE cars
-       SET
-         owner_id = COALESCE($1, owner_id),
-         make = COALESCE($2, make),
-         model = COALESCE($3, model),
-         year = COALESCE($4, year),
-         body_type = COALESCE($5, body_type),
-         fuel_type = COALESCE($6, fuel_type),
-         transmission = COALESCE($7, transmission),
-         price = COALESCE($8, price),
-         status = COALESCE($9, status),
-         rating = COALESCE($10, rating),
-         rating_count = COALESCE($11, rating_count),
-         image_url = COALESCE($12, image_url)
-       WHERE car_id = $13
-       RETURNING *`,
-      [
-        owner_id ?? null,
-        make ?? null,
-        model ?? null,
-        year ?? null,
-        body_type ?? null,
-        fuel_type ?? null,
-        transmission ?? null,
-        price ?? null,
-        status ?? null,
-        rating ?? null,
-        rating_count ?? null,
-        image_url ?? null,
-        carId,
-      ]
+SET
+  owner_id = COALESCE($1, owner_id),
+  make = COALESCE($2, make),
+  model = COALESCE($3, model),
+  year = COALESCE($4, year),
+  body_type = COALESCE($5, body_type),
+  fuel_type = COALESCE($6, fuel_type),
+  transmission = COALESCE($7, transmission),
+  price = COALESCE($8, price),
+  status = COALESCE($9, status),
+  rating = COALESCE($10, rating),
+  rating_count = COALESCE($11, rating_count),
+  image_url = COALESCE($12, image_url),
+  model_path = COALESCE($13, model_path)
+WHERE car_id = $14
+RETURNING *`,
+[
+  owner_id ?? null,
+  make ?? null,
+  model ?? null,
+  year ?? null,
+  body_type ?? null,
+  fuel_type ?? null,
+  transmission ?? null,
+  price ?? null,
+  status ?? null,
+  rating ?? null,
+  rating_count ?? null,
+  image_url ?? null,
+  model_path ?? null,
+  carId,
+]
     );
 
     if (rows.length === 0) {
