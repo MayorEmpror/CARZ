@@ -45,7 +45,7 @@ export function CarCard({
         <img
           src={car.image_url}
           alt={`${car.make} ${car.model}`}
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover bg-center"
         />
 
         {/* Overlay */}
