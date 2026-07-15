@@ -1,7 +1,7 @@
 import { carDetails } from "@/lib/api/car";
 import CarModelViewer from "./CarModelViewer";
 import { Gauge, ArrowUpRight, Fuel, Star } from "lucide-react";
-
+import {Link} from "next-transition-router";
 // ---------- helpers ----------
 
 function computeScore(car: {
@@ -140,6 +140,8 @@ export default async function CarDetails({
         </nav>
       </div>
 
+     
+
       {/* Title block */}
       <div className="relative z-10 px-8 mt-4 pointer-events-none">
         <h1 className="text-5xl font-semibold text-white tracking-tight">
@@ -153,6 +155,12 @@ export default async function CarDetails({
 
       {/* Left stat column */}
       <div className="absolute left-8 top-[240px] z-10 flex flex-col gap-4 pointer-events-auto">
+      <Link
+          href="/showroom"
+          className="rounded-lg z-10 mt-5 relative bg-slate-700 px-6 py-3 text-white hover:bg-slate-600 transition"
+        >
+          Showroom
+        </Link>
         <StatPill icon={<Gauge className="w-6 h-6" />} label="Top Speed" value={`${top_speed} mph`} />
         <StatPill icon={<ArrowUpRight className="w-6 h-6" />} label="0-100 mph" value={`${acceleration_0_100}s`} />
         <StatPill icon={<Fuel className="w-6 h-6" />} label="Fuel Efficiency" value={`${fuel_efficiency} mpg`} />
