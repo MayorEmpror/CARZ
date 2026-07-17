@@ -1,5 +1,5 @@
 import { carDetails } from "@/lib/api/car";
-import CarModelViewer from "./CarModelViewer";
+import CarModelViewer from "@/components/CarModelViewer/CarModelViewer";
 import { Gauge, ArrowUpRight, Fuel, Star } from "lucide-react";
 import {Link} from "next-transition-router";
 // ---------- helpers ----------

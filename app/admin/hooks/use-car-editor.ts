@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import type { Car } from "@/lib/types";
-import { editCars } from "@/lib/api/car";
+import { editCars, setDefaultCarImage } from "@/lib/api/car";
+
 
 async function uploadImage(file: File): Promise<{ url: string }> {
   const formData = new FormData();
@@ -13,10 +14,14 @@ async function uploadImage(file: File): Promise<{ url: string }> {
   return res.json();
 }
 
-async function uploadModel(file: File): Promise<{ url: string }> {
+async function uploadModel(
+  file: File,
+  carId: number
+): Promise<{ url: string; imageUrl: string | null }> {
   const formData = new FormData();
 
   formData.append("file", file);
+  formData.append("carId", String(carId));
 
   const res = await fetch("/api/upload-model", {
     method: "POST",
@@ -32,8 +37,6 @@ async function uploadModel(file: File): Promise<{ url: string }> {
 
   return data;
 }
-
-
 
 
 
@@ -191,17 +194,33 @@ export function useCarEditor(
       // Upload 3D model
       if (modelFile) {
         setUploading(true);
-  
-        const { url } = await uploadModel(modelFile);
-  
+
+        const { url, imageUrl } = await uploadModel(modelFile, car.car_id);
+
         payload = {
           ...payload,
           model_path: url,
+          ...(imageUrl ? { image_url: imageUrl } : {}),
         };
-  
+
         setUploading(false);
       }
-  
+
+
+      // No manual photo picked and no new model uploaded this time —
+      // if the car still has no image_url, fall back to a previously
+      // generated angle shot from car_images instead of leaving it blank.
+      if (!file && !modelFile && !editData.image_url && !car.image_url) {
+        const fallback = await setDefaultCarImage(car.car_id);
+
+        if (fallback?.imageUrl) {
+          payload = {
+            ...payload,
+            image_url: fallback.imageUrl,
+          };
+        }
+      }
+
   
       const updated = await editCars(
         car.car_id,

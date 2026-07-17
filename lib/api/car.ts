@@ -92,3 +92,19 @@ export async function Addcars(data: AddCarFormData): Promise<CustomRes> {
       };
     }
   }
+
+  // somewhere near your other api helpers, e.g. lib/api/car.ts
+export async function setDefaultCarImage(
+  carId: number
+): Promise<{ imageUrl: string } | null> {
+  const res = await fetch(`/api/cars/${carId}/set-default-image`, {
+    method: "POST",
+  });
+
+  if (!res.ok) {
+    // Not fatal — car may just not have generated images yet
+    return null;
+  }
+
+  return res.json();
+}

@@ -195,30 +195,8 @@ export function CarEditForm({
               />
             </label>
           </div>
-        </div>
 
-        <div className="shrink-0 flex justify-between items-center px-5 py-4 border-t border-white/5">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="text-sm text-neutral-400 hover:text-white transition-colors px-3 py-2"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={saving}
-            className="bg-violet-300 hover:bg-violet-400 disabled:opacity-50 text-black text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-          >
-            {saving
-              ? uploading
-                ? "Uploading..."
-                : "Saving..."
-              : "Save changes"}
-          </button>
-        </div>
-
-        <div className="pb-5">
+          <div className="pb-5">
           <label className="block text-sm text-[#8B9299] mb-2">3D Model</label>
 
           <label
@@ -255,6 +233,30 @@ export function CarEditForm({
             />
           </label>
         </div>
+        </div>
+
+        <div className="shrink-0 flex justify-between items-center px-5 py-4 border-t border-white/5">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-sm text-neutral-400 hover:text-white transition-colors px-3 py-2"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            className="bg-violet-300 hover:bg-violet-400 disabled:opacity-50 text-black text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          >
+            {saving
+              ? uploading
+                ? "Uploading..."
+                : "Saving..."
+              : "Save changes"}
+          </button>
+        </div>
+
+      
       </form>
     </div>
   );
