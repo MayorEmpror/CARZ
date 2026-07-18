@@ -1,7 +1,14 @@
-"use Client";
+"use client";
 import Sidebar from "@/components/DashboardSideBar";
 import { NavItem, Sales, Car, User, Payment } from "@/lib/types";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import CustomerTab from "@/components/CustomersHandler"
+import SalesTab from "./Handlers/SalesTab"
+import  PaymentsTab from "./Handlers/PaymentsTsb"
+import Profile from "./Handlers/Profiles"
+import CarTab from "../admin/CarHandlers/CarHandler";
+
 import {
     Menu,
     Car as CarIcon,
@@ -18,16 +25,21 @@ import {
 
 type Tab = "cars" | "customers" | "sales" | "payments" | "profile";
 
-export default function ({
+export default function DashboardLayout ({
   initialCars,
   sales,
+  customers,
   payments,
+  user,
 }: {
-  initialCars: Car[];
-  sales: Sales[];
-  payments: Payment[];
+  initialCars: Car[]  ;
+  sales: Sales[]  ;
+  customers: User[] ;
+  payments: Payment[] ;
+  user : User;
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("profile");
+  const router = useRouter()
   const handleLogout = () => {
     console.log("handle admin logout here ");
   };
@@ -50,7 +62,7 @@ export default function ({
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           navItems={navItems}
-          brandName="Admin Panel"
+          brandName={user.full_name}
           brandSubtitle="Fleet Manager"
           user={{ name: "Admin User", email: "admin@fleet.com" }}
           onSettingsClick={() => router.push("/settings")}
@@ -61,15 +73,12 @@ export default function ({
         <div className="flex-1 overflow-y-auto">
           {activeTab === "cars" && <CarTab initialCars={initialCars} />}
           {activeTab === "customers" && (
-            <CustomerTab initialCustomers={initialCust} />
+            <CustomerTab initialCustomers={customers} />
           )}
-          {activeTab === "owners" && <OwnerTab initialOnwers={initialOnwers} />}
-          {activeTab === "addcar" && <AddCar />}
-          {activeTab === "Performance" && (
-            <PerformanceHandler
-              withoutperf={withoutperf}
-              initialPerfMetric={initialPerfMetric}
-            />
+          {activeTab === "sales" && <SalesTab sales={sales} />}
+          {activeTab === "payments" && <PaymentsTab payments ={payments}/>}
+          {activeTab === "profile" && (
+            <Profile/>
           )}
         </div>
       </div>

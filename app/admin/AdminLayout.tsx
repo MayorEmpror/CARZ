@@ -4,7 +4,7 @@ import { User } from "@/lib/types";
 import { Named_Car_Perf } from "@/lib/types";
 import { useState } from "react";
 import CarTab from "./CarHandlers/CarHandler";
-import CustomerTab from "./CustomersHandler";
+import CustomerTab from "@/components/CustomersHandler";
 import { OwnerTab } from "./OwnersHandler";
 import AddCar from "./AddCar";
 import Sidebar from "@/components/DashboardSideBar";

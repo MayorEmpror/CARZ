@@ -108,3 +108,15 @@ export async function setDefaultCarImage(
 
   return res.json();
 }
+
+export async function getCarByUserId(user_id: number): Promise<Car[]> {
+  const res = await fetch(`${process.env.HOST}/api/getOwnerCars?owner_id=${user_id}`, {
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch cars");
+  }
+
+  return res.json();
+}
