@@ -108,3 +108,19 @@ export interface AddPerfFormData{
     fuel_efficiency : number;          
 
 }
+
+export type NavItem<T extends string = string> = {
+  tab: T;
+  label: string;
+  icon: React.ElementType | string;
+};
+
+export interface Sales{
+  purchase_id  : number;
+  customer_id  :  number;
+  car_id  :      number;
+  purchase_date : Date;
+  purchase_price : number;
+  status  :      string;
+  created_at :   Timestamp
+}

@@ -1,15 +1,15 @@
 "use client";
 import { Car } from "@/lib/types";
 import { User } from "@/lib/types";
-import {Named_Car_Perf} from "@/lib/types"
+import { Named_Car_Perf } from "@/lib/types";
 import { useState } from "react";
 import CarTab from "./CarHandlers/CarHandler";
 import CustomerTab from "./CustomersHandler";
 import { OwnerTab } from "./OwnersHandler";
 import AddCar from "./AddCar";
-import Sidebar from "./sidebar"
-import PerformanceHandler from "./Perf/PerfHandler"
-
+import Sidebar from "@/components/DashboardSideBar";
+import {NavItem} from "@/lib/types"
+import PerformanceHandler from "./Perf/PerfHandler";
 
 import {
   Menu,
@@ -18,7 +18,12 @@ import {
   User as UserIcon,
   HelpCircle,
   Check,
+  ClipboardPen,
+  PlusCircle,
+  UserCog,
+  Users,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 type Tab = "cars" | "customers" | "owners" | "addcar" | "Performance";
 
@@ -66,13 +71,29 @@ type Step = {
 
 function StepHeaderBar() {
   const steps: Step[] = [
-    { number: 1, label: "RENTAL INFORMATION", value: "Wed, Feb 07, 11:00 AM → Wed, Feb 14, 10:00 AM", completed: true },
-    { number: 2, label: "PICK UP & DROP OFF", value: "Munich Airport", completed: true },
-    { number: 3, label: "RETURN STATION", value: "Hamburg-Eppendorf", completed: true },
+    {
+      number: 1,
+      label: "RENTAL INFORMATION",
+      value: "Wed, Feb 07, 11:00 AM → Wed, Feb 14, 10:00 AM",
+      completed: true,
+    },
+    {
+      number: 2,
+      label: "PICK UP & DROP OFF",
+      value: "Munich Airport",
+      completed: true,
+    },
+    {
+      number: 3,
+      label: "RETURN STATION",
+      value: "Hamburg-Eppendorf",
+      completed: true,
+    },
     { number: 4, label: "VEHICLE", value: "Choose" },
     { number: 5, label: "ADDITIONAL PRODUCTS", value: "Choose", faded: true },
     { number: 6, label: "TOTAL", value: "00,00 €" },
   ];
+
 
   return (
     <div className="flex bg-zinc-950 border-b border-zinc-800">
@@ -96,9 +117,7 @@ function StepHeaderBar() {
             >
               {step.label}
             </span>
-            {step.completed && (
-              <Check className="w-3.5 h-3.5 text-white/70" />
-            )}
+            {step.completed && <Check className="w-3.5 h-3.5 text-white/70" />}
           </div>
 
           <div
@@ -119,16 +138,26 @@ export default function AdminLayout({
   initialCust,
   initialOnwers,
   initialPerfMetric,
-  withoutperf
+  withoutperf,
 }: {
   initialCars: Car[];
   initialCust: User[];
   initialOnwers: User[];
   initialPerfMetric: Named_Car_Perf[];
-  withoutperf : Car[]
+  withoutperf: Car[];
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("cars");
-
+  const router = useRouter()
+  const handleLogout = ()=>{
+    console.log("handle admin logout here ")
+  }
+  const navItems: NavItem<Tab>[] = [
+    { tab: "cars", label: "Cars", icon: CarIcon },
+    { tab: "customers", label: "Customers", icon: Users },
+    { tab: "owners", label: "Owners", icon: UserCog },
+    { tab: "addcar", label: "Add Car", icon: PlusCircle },
+    { tab: "Performance", label: "Performance", icon: ClipboardPen },
+  ];
   return (
     <div className="flex flex-col h-screen bg-black text-white">
       {/* HEADERS */}
@@ -138,17 +167,30 @@ export default function AdminLayout({
       <div className="flex flex-1 overflow-hidden">
         {/* SIDEBAR */}
         <Sidebar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-         />
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          navItems={navItems}
+          brandName="Admin Panel"
+          brandSubtitle="Fleet Manager"
+          user={{ name: "Admin User", email: "admin@fleet.com" }}
+          onSettingsClick={() => router.push("/settings")}
+          onLogoutClick={handleLogout}
+        />
 
         {/* CONTENT AREA */}
         <div className="flex-1 overflow-y-auto">
           {activeTab === "cars" && <CarTab initialCars={initialCars} />}
-          {activeTab === "customers" &&  <CustomerTab initialCustomers={initialCust} /> }
-          {activeTab === "owners" &&  <OwnerTab initialOnwers={initialOnwers} />}
+          {activeTab === "customers" && (
+            <CustomerTab initialCustomers={initialCust} />
+          )}
+          {activeTab === "owners" && <OwnerTab initialOnwers={initialOnwers} />}
           {activeTab === "addcar" && <AddCar />}
-          {activeTab === "Performance" && <PerformanceHandler withoutperf={withoutperf}  initialPerfMetric={initialPerfMetric} />}
+          {activeTab === "Performance" && (
+            <PerformanceHandler
+              withoutperf={withoutperf}
+              initialPerfMetric={initialPerfMetric}
+            />
+          )}
         </div>
       </div>
     </div>
