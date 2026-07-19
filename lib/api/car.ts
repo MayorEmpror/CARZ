@@ -1,6 +1,6 @@
 import {Car} from "@/lib/types"
 import { CarDetails } from "@/lib/types";
-import { AddCarFormData} from "@/lib/types"
+import { AddCarFormData, } from "@/lib/types"
 import { CustomRes } from "@/lib/types";
 
 
@@ -71,19 +71,21 @@ export async function Addcars(data: AddCarFormData): Promise<CustomRes> {
           image_url: data.url,
         }),
       });
-  
+      const body = await res.json();
       if (!res.ok) {
         // try to surface the server's error message, if any
         const errorBody = await res.json().catch(() => null);
         return {
           success: false,
           message: errorBody?.message ?? "Failed to create listing",
+          
         };
       }
   
       return {
         success: true,
         message: "Car added successfully",
+        car_id : body.car_id,
       };
     } catch(err) {
       return {

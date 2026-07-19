@@ -47,7 +47,17 @@ export async function POST(req: NextRequest) {
       ]
     );
 
-    return NextResponse.json(result.rows[0]);
+  
+    const newCar = result.rows[0];
+
+
+    return NextResponse.json({
+      success: true,
+      car_id: newCar.car_id,
+      car: newCar,
+      message: "Car added successfully"
+    });
+
   } catch (err) {
     console.error(err);
     return NextResponse.json(

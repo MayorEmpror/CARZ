@@ -8,6 +8,7 @@ import SalesTab from "./Handlers/SalesTab"
 import  PaymentsTab from "./Handlers/PaymentsTsb"
 import Profile from "./Handlers/Profiles"
 import CarTab from "../admin/CarHandlers/CarHandler";
+import AddCar from "../admin/AddCar";
 
 import {
     Menu,
@@ -23,7 +24,7 @@ import {
   } from "lucide-react";
   
 
-type Tab = "cars" | "customers" | "sales" | "payments" | "profile";
+type Tab = "cars" | "customers" | "sales" | "payments" | "profile" | "addcar";
 
 export default function DashboardLayout ({
   initialCars,
@@ -46,9 +47,10 @@ export default function DashboardLayout ({
   const navItems: NavItem<Tab>[] = [
     { tab: "cars", label: "Cars", icon: CarIcon },
     { tab: "customers", label: "Customers", icon: Users },
-    { tab: "sales", label: "Owners", icon: UserCog },
-    { tab: "profile", label: "Add Car", icon: PlusCircle },
-    { tab: "payments", label: "Performance", icon: ClipboardPen },
+    { tab: "sales", label: "sales", icon: UserCog },
+    { tab: "profile", label: "profile", icon: PlusCircle },
+    { tab: "payments", label: "payments", icon: ClipboardPen },
+    { tab: "addcar", label: "AddCar", icon: PlusCircle },
   ];
   return (
     <div className="flex flex-col h-screen bg-black text-white">
@@ -77,9 +79,8 @@ export default function DashboardLayout ({
           )}
           {activeTab === "sales" && <SalesTab sales={sales} />}
           {activeTab === "payments" && <PaymentsTab payments ={payments}/>}
-          {activeTab === "profile" && (
-            <Profile/>
-          )}
+          {activeTab === "profile" &&  <Profile/>}
+          {activeTab === "addcar" &&  <AddCar user_id = {user.user_id}/>}
         </div>
       </div>
     </div>

@@ -2,26 +2,37 @@
 
 import { useState, useRef } from "react";
 import { AddCarFormState } from "@/lib/types";
-import { Addcars } from "@/lib/api/car"; // adjust path to match your project
+import { Addcars, editCars } from "@/lib/api/car"; // adjust path to match your project
 
-const BODY_TYPES = ["Sedan", "SUV", "Hatchback", "Coupe", "Convertible", "Truck", "Van"];
+const BODY_TYPES = [
+  "Sedan",
+  "SUV",
+  "Hatchback",
+  "Coupe",
+  "Convertible",
+  "Truck",
+  "Van",
+];
 const FUEL_TYPES = ["Petrol", "Diesel", "Electric", "Hybrid"];
 const TRANSMISSIONS = ["Automatic", "Manual"];
 
 type FormErrors = Partial<Record<keyof AddCarFormState, string>>;
 
-const initialForm: AddCarFormState = {
-  owner_id: 1, // TODO: replace with authenticated user id
-  make: "",
-  model: "",
-  year: "",
-  price: "",
-  body_type: "",
-  fuel_type: "",
-  transmission: "",
+type Props = {
+  user_id: number;
 };
+export default function AddCar({ user_id }: Props) {
+  const initialForm: AddCarFormState = {
+    owner_id: user_id, // TODO: replace with authenticated user id
+    make: "",
+    model: "",
+    year: "",
+    price: "",
+    body_type: "",
+    fuel_type: "",
+    transmission: "",
+  };
 
-export default function AddCar() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [form, setForm] = useState<AddCarFormState>(initialForm);
@@ -30,8 +41,13 @@ export default function AddCar() {
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [statusMessage, setStatusMessage] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [modelFile, setModelFile] = useState<File | null>(null);
+  const modelInputRef = useRef<HTMLInputElement>(null);
 
-  function updateField<K extends keyof AddCarFormState>(key: K, value: AddCarFormState[K]) {
+  function updateField<K extends keyof AddCarFormState>(
+    key: K,
+    value: AddCarFormState[K],
+  ) {
     setForm((prev) => ({ ...prev, [key]: value }));
     if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
   }
@@ -45,6 +61,20 @@ export default function AddCar() {
       setPreview(null);
     }
   }
+  function handleModelChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const selected = e.target.files?.[0];
+
+    if (!selected) return;
+
+    if (!selected.name.endsWith(".glb")) {
+      setStatus("error");
+      setStatusMessage("Only .glb files are allowed");
+
+      return;
+    }
+
+    setModelFile(selected);
+  }
 
   function validate(): FormErrors {
     const next: FormErrors = {};
@@ -55,13 +85,18 @@ export default function AddCar() {
 
     const yearNum = Number(form.year);
     if (!form.year) next.year = "Enter a year";
-    else if (!Number.isInteger(yearNum) || yearNum < 1900 || yearNum > currentYear + 1) {
+    else if (
+      !Number.isInteger(yearNum) ||
+      yearNum < 1900 ||
+      yearNum > currentYear + 1
+    ) {
       next.year = `Enter a year between 1900 and ${currentYear + 1}`;
     }
 
     const priceNum = Number(form.price);
     if (!form.price) next.price = "Enter a price";
-    else if (Number.isNaN(priceNum) || priceNum <= 0) next.price = "Enter a valid price";
+    else if (Number.isNaN(priceNum) || priceNum <= 0)
+      next.price = "Enter a valid price";
 
     if (!form.body_type) next.body_type = "Select a body type";
     if (!form.fuel_type) next.fuel_type = "Select a fuel type";
@@ -82,43 +117,120 @@ export default function AddCar() {
     if (!res.ok) throw new Error("Image upload failed");
     return res.json();
   }
+  async function uploadModel(
+    file: File,
+    carId: number,
+  ): Promise<{ url: string; imageUrl?: string }> {
+    const formData = new FormData();
+
+    formData.append("file", file);
+    formData.append("carId", String(carId));
+
+    const res = await fetch("/api/upload-model", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || "Model upload failed");
+    }
+
+    return data;
+  }
 
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
+
     setStatus("idle");
 
     const nextErrors = validate();
+
     if (!file) {
-      setStatusMessage("Add a photo of the car before submitting.");
       setStatus("error");
+      setStatusMessage("Add a photo of the car before submitting.");
+
       return;
     }
+
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
+
       return;
     }
 
     setSubmitting(true);
+
     try {
+      // -------------------------
+      // Upload main car image
+      // -------------------------
+
       const upload = await uploadImage(file);
 
-      const result = await Addcars({ ...form, url: upload.url });
+      // -------------------------
+      // Create car
+      // -------------------------
+
+      const result = await Addcars({
+        ...form,
+
+        url: upload.url,
+      });
 
       if (!result.success) {
         setStatus("error");
         setStatusMessage(result.message);
+
         return;
       }
 
+      // -------------------------
+      // Upload 3D model
+      // -------------------------
+
+      if (modelFile && result.car_id) {
+        const model = await uploadModel(modelFile, result.car_id);
+
+        await editCars(
+          result.car_id,
+
+          {
+            model_path: model.url,
+
+            ...(model.imageUrl
+              ? {
+                  image_url: model.imageUrl,
+                }
+              : {}),
+          },
+        );
+      }
+
       setStatus("success");
-      setStatusMessage(result.message);
+
+      setStatusMessage("Car added successfully");
+
+      // reset form
+
       setForm(initialForm);
+
       setFile(null);
+
+      setModelFile(null);
+
       setPreview(null);
+
       if (fileInputRef.current) fileInputRef.current.value = "";
+
+      if (modelInputRef.current) modelInputRef.current.value = "";
     } catch (err) {
       setStatus("error");
-      setStatusMessage(err instanceof Error ? err.message : "Something went wrong.");
+
+      setStatusMessage(
+        err instanceof Error ? err.message : "Something went wrong.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -132,7 +244,9 @@ export default function AddCar() {
       >
         <div>
           <h1 className="text-lg font-semibold">List a car</h1>
-          <p className="text-sm text-[#8B9299] mt-1">Add the details below to publish a new listing.</p>
+          <p className="text-sm text-[#8B9299] mt-1">
+            Add the details below to publish a new listing.
+          </p>
         </div>
 
         {/* Photo */}
@@ -143,7 +257,11 @@ export default function AddCar() {
             className="flex items-center gap-4 bg-[#1C2126] border border-white/5 rounded-xl p-3 cursor-pointer hover:border-white/10 transition-colors"
           >
             {preview ? (
-              <img src={preview} alt="Selected car" className="w-14 h-14 object-cover rounded-lg" />
+              <img
+                src={preview}
+                alt="Selected car"
+                className="w-14 h-14 object-cover rounded-lg"
+              />
             ) : (
               <div className="w-14 h-14 rounded-lg bg-[#262C33] flex items-center justify-center text-[#8B9299] text-xl">
                 +
@@ -158,6 +276,45 @@ export default function AddCar() {
               type="file"
               accept="image/*"
               onChange={handleFileChange}
+              className="hidden"
+            />
+          </label>
+        </div>
+
+        {/* 3D model */}
+        <div>
+          <label className="block text-sm text-[#8B9299] mb-2">
+            3D model <span className="text-[#5B6169]">(optional, .glb)</span>
+          </label>
+          <label
+            htmlFor="car-model"
+            className="flex items-center gap-4 bg-[#1C2126] border border-white/5 rounded-xl p-3 cursor-pointer hover:border-white/10 transition-colors"
+          >
+            <div className="w-14 h-14 rounded-lg bg-[#262C33] flex items-center justify-center text-[#8B9299] text-xl">
+              {modelFile ? "✓" : "+"}
+            </div>
+            <span className="text-sm text-[#8B9299] truncate flex-1">
+              {modelFile ? modelFile.name : "Choose a .glb file"}
+            </span>
+            {modelFile && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setModelFile(null);
+                  if (modelInputRef.current) modelInputRef.current.value = "";
+                }}
+                className="text-xs text-[#8B9299] hover:text-[#E8EAED] shrink-0"
+              >
+                Remove
+              </button>
+            )}
+            <input
+              id="car-model"
+              ref={modelInputRef}
+              type="file"
+              accept=".glb"
+              onChange={handleModelChange}
               className="hidden"
             />
           </label>
@@ -197,7 +354,9 @@ export default function AddCar() {
           </Field>
           <Field label="Price" error={errors.price}>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8B9299] text-sm">$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8B9299] text-sm">
+                $
+              </span>
               <input
                 type="number"
                 inputMode="decimal"
@@ -217,9 +376,13 @@ export default function AddCar() {
             onChange={(e) => updateField("body_type", e.target.value)}
             className={selectClass(!!errors.body_type)}
           >
-            <option value="" disabled>Select body type</option>
+            <option value="" disabled>
+              Select body type
+            </option>
             {BODY_TYPES.map((t) => (
-              <option key={t} value={t}>{t}</option>
+              <option key={t} value={t}>
+                {t}
+              </option>
             ))}
           </select>
         </Field>
@@ -232,9 +395,13 @@ export default function AddCar() {
               onChange={(e) => updateField("fuel_type", e.target.value)}
               className={selectClass(!!errors.fuel_type)}
             >
-              <option value="" disabled>Select</option>
+              <option value="" disabled>
+                Select
+              </option>
               {FUEL_TYPES.map((t) => (
-                <option key={t} value={t}>{t}</option>
+                <option key={t} value={t}>
+                  {t}
+                </option>
               ))}
             </select>
           </Field>
@@ -244,9 +411,13 @@ export default function AddCar() {
               onChange={(e) => updateField("transmission", e.target.value)}
               className={selectClass(!!errors.transmission)}
             >
-              <option value="" disabled>Select</option>
+              <option value="" disabled>
+                Select
+              </option>
               {TRANSMISSIONS.map((t) => (
-                <option key={t} value={t}>{t}</option>
+                <option key={t} value={t}>
+                  {t}
+                </option>
               ))}
             </select>
           </Field>

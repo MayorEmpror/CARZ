@@ -85,17 +85,20 @@ export type AddCarFormState = {
   body_type: string;
   fuel_type: string;
   transmission: string;
- 
+  
 };
 
 export interface CustomRes {
   success : boolean;
   message : string;
+  car_id? : number;
 }
 
 
 export interface AddCarFormData extends AddCarFormState{
    url: URL,
+  
+
 }
 
 export interface AddPerfFormData{
