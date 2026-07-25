@@ -4,7 +4,7 @@ import { NavItem, Sales, Car, User, Payment } from "@/lib/types";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import CustomerTab from "@/components/CustomersHandler"
-import SalesTab from "./Handlers/SalesTab"
+import SalesTab from "./sales/SalesTab"
 import  PaymentsTab from "./Handlers/PaymentsTsb"
 import Profile from "./Handlers/Profiles"
 import CarTab from "../admin/CarHandlers/CarHandler";
@@ -52,6 +52,7 @@ export default function DashboardLayout ({
     { tab: "payments", label: "payments", icon: ClipboardPen },
     { tab: "addcar", label: "AddCar", icon: PlusCircle },
   ];
+   console.log("user id : " + user.user_id)
   return (
     <div className="flex flex-col h-screen bg-black text-white">
       {/* HEADERS */}

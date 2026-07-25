@@ -47,6 +47,23 @@ export function getMonthlyTotals(sales: Sales[]): MonthlyTotal[] {
   return buckets;
 }
 
+
+
+
+// Salesaggregations.ts
+export function getDayHourGrid(sales: Sales[]): number[][] {
+  const grid: number[][] = Array.from({ length: 7 }, () => new Array(24).fill(0));
+  for (const s of sales) {
+    const dateForDay = new Date(s.purchase_date);
+    const dateForHour = new Date(s.created_at as unknown as string); // adjust if Timestamp needs .toDate()
+    const day = dateForDay.getDay();
+    const hour = dateForHour.getHours();
+    if (Number.isNaN(day) || Number.isNaN(hour)) continue;
+    grid[day][hour] += 1;
+  }
+  return grid;
+}
+
 export function getStatusDistribution(sales: Sales[]): StatusSlice[] {
   const counts = new Map<string, number>();
   for (const sale of sales) {
@@ -82,14 +99,27 @@ export function getCustomerTrend(sales: Sales[]): CustomerTrendPoint[] {
   return buckets;
 }
 
+function isRevenueCounted(status: string): boolean {
+  const s = (status || "").toLowerCase();
+  return s !== "cancelled";
+}
+
+function toNumber(n: unknown): number {
+  const v = typeof n === "number" ? n : parseFloat(String(n));
+  return Number.isFinite(v) ? v : 0;
+}
+
 export function sum(sales: Sales[]): number {
-  return sales.reduce((acc, s) => acc + s.purchase_price, 0);
+  return sales.reduce(
+    (acc, s) => (isRevenueCounted(s.status) ? acc + toNumber(s.purchase_price) : acc),
+    0
+  );
 }
 
 export function average(sales: Sales[]): number {
-  return sales.length ? sum(sales) / sales.length : 0;
+  const counted = sales.filter((s) => isRevenueCounted(s.status));
+  return counted.length ? sum(counted) / counted.length : 0;
 }
-
 export function uniqueCustomerCount(sales: Sales[]): number {
   return new Set(sales.map((s) => s.customer_id)).size;
 }
@@ -101,4 +131,40 @@ export function trendPct(values: number[]): number {
   const prev = values[values.length - 2];
   if (prev === 0) return last === 0 ? 0 : 100;
   return ((last - prev) / prev) * 100;
+}
+
+export type MonthStatusCell = { count: number; avgPrice: number };
+
+/**
+ * Builds a [status][month] grid where each cell carries two independent
+ * metrics: order count (drives terrain height) and average purchase price
+ * (drives terrain color) — a true 4th dimension on top of month/status/height.
+ */
+export function getMonthStatusGrid(sales: Sales[]): {
+  statuses: string[];
+  grid: MonthStatusCell[][]; // grid[statusIdx][month]
+} {
+  const statusSet = new Set<string>();
+  for (const s of sales) statusSet.add(s.status || "unknown");
+  const statuses = Array.from(statusSet);
+
+  const count: number[][] = statuses.map(() => new Array(12).fill(0));
+  const sumPrice: number[][] = statuses.map(() => new Array(12).fill(0));
+
+  for (const s of sales) {
+    const month = toDate(s.purchase_date).getMonth();
+    const statusIdx = statuses.indexOf(s.status || "unknown");
+    if (statusIdx === -1) continue;
+    count[statusIdx][month] += 1;
+    sumPrice[statusIdx][month] += s.purchase_price;
+  }
+
+  const grid: MonthStatusCell[][] = statuses.map((_, si) =>
+    count[si].map((c, mi) => ({
+      count: c,
+      avgPrice: c ? sumPrice[si][mi] / c : 0,
+    }))
+  );
+
+  return { statuses, grid };
 }

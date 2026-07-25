@@ -12,6 +12,7 @@ export default async function (){
     console.log("user id : " + user.user_id  )
     const cars = await getCarByUserId(user.user_id  );
     const sales = await getSalesByUserId(user.user_id  );
+   
     const customers = await getCustomers();
     const payments = await getPaymentsByUserId(user.user_id  );
    

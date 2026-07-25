@@ -6,9 +6,11 @@ type Props = {
 }
 export default function SalesTab({sales} : Props){
     const [Sales, setSales] = useState<Sales[]>(sales)
+    console.log(Sales)
     return <div className="text-4xl text-white">
+        sales : 
         <ul>
-            {sales.map((x,k)=>{
+            {Sales.map((x,k)=>{
                 return <li key={k}>
                   {x.car_id}
                 </li>
