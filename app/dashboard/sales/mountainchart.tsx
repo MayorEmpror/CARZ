@@ -707,9 +707,7 @@ export default function SalesMountainChart() {
     <div
       ref={containerRef}
       className="relative h-full w-full overflow-hidden"
-      style={{
-        background: "radial-gradient(120% 100% at 25% 15%, #1a2a33 0%, #0d1013 45%, #050506 100%)",
-      }}
+     
       onPointerDown={() => setAutoRotate(false)}
     >
       {!ready && !error && (
@@ -731,7 +729,7 @@ export default function SalesMountainChart() {
           <directionalLight
             position={[-24, 26, 10]}
             intensity={1.0}
-            color="#ffb37a"
+           
             castShadow
             shadow-mapSize={[2048, 2048]}
             shadow-camera-left={-32}
@@ -739,7 +737,7 @@ export default function SalesMountainChart() {
             shadow-camera-top={32}
             shadow-camera-bottom={-32}
           />
-          <directionalLight position={[24, 18, -10]} intensity={0.55} color="#5fb0c9" />
+          <directionalLight position={[24, 18, -10]} intensity={0.55}  />
 
           <GroundPlane />
           <Terrain grid={grid} breadth={breadth} onHover={handleHover} />

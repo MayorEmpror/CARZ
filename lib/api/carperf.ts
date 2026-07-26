@@ -1,4 +1,4 @@
-import { Named_Car_Perf, Car_Perf, CustomRes, AddPerfFormData} from "@/lib/types"
+import { Named_Car_Perf, Car_Perf, CustomRes, AddPerfFormData, CarDetails} from "@/lib/types"
 
 
 export async function getPerf(id: string): Promise<Car_Perf> {
@@ -57,4 +57,16 @@ export async function AddCarPerformance(data: AddPerfFormData): Promise<CustomRe
       message: "Network error",
     };
   }
+}
+
+export async function getCarwithPerfByUserId(user_id: number): Promise<CarDetails[]> {
+  const res = await fetch(`${process.env.HOST}/api/getOwnerCarPerf?owner_id=${user_id}`, {
+    cache: "no-store",
+  });
+   console.log(res)
+  if (!res.ok) {
+    throw new Error("Failed to fetch cars");
+  }
+
+  return res.json();
 }

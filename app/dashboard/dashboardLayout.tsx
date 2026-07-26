@@ -1,6 +1,6 @@
 "use client";
 import Sidebar from "@/components/DashboardSideBar";
-import { NavItem, Sales, Car, User, Payment } from "@/lib/types";
+import { NavItem, Sales, Car, User, Payment, CarDetails } from "@/lib/types";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import CustomerTab from "@/components/CustomersHandler"
@@ -34,12 +34,14 @@ export default function DashboardLayout ({
   customers,
   payments,
   user,
+  carswithperf
 }: {
   initialCars: Car[]  ;
   sales: Sales[]  ;
   customers: User[] ;
   payments: Payment[] ;
   user : User;
+  carswithperf: CarDetails[];
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("profile");
   const router = useRouter()
@@ -85,7 +87,7 @@ export default function DashboardLayout ({
           {activeTab === "payments" && <PaymentsTab payments ={payments}/>}
           {activeTab === "profile" &&  <Profile/>}
           {activeTab === "addcar" &&  <AddCar user_id = {user.user_id}/>}
-          {activeTab === "manage_cars" &&  <ManageCars user_id = {user.user_id}/>}
+          {activeTab === "manage_cars" &&  <ManageCars user_id = {user.user_id} carswithperf={carswithperf}/>}
         </div>
       </div>
     </div>
