@@ -120,7 +120,7 @@ export default function SalesTab({ sales }: Props) {
     <div className="relative h-screen w-full overflow-hidden bg-[#08090a] text-white">
       {/* ---------------- BACKGROUND: full-bleed 3D terrain ---------------- */}
       <div className="absolute inset-0 z-0">
-        <SalesMountainChart sales={sales} />
+        <SalesMountainChart  />
       </div>
 
       {/* ---------------- FOREGROUND UI (floats over the canvas) ---------------- */}
