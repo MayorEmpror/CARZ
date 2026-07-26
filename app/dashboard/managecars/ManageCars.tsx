@@ -10,6 +10,7 @@ import {
   useGLTF,
   Stage,
 } from "@react-three/drei";
+import { useControls } from "leva";
 import * as THREE from "three";
 import { CarDetails } from "@/lib/types";
 
@@ -17,6 +18,30 @@ type Props = {
   user_id: number;
   carswithperf: CarDetails[];
 };
+
+// ---------- Camera rig driven by Leva ----------
+function CameraRig({
+  camX,
+  camY,
+  camZ,
+  fov,
+}: {
+  camX: number;
+  camY: number;
+  camZ: number;
+  fov: number;
+}) {
+  useFrame(({ camera }) => {
+    camera.position.set(camX, camY, camZ);
+    if (camera instanceof THREE.PerspectiveCamera) {
+      if (camera.fov !== fov) {
+        camera.fov = fov;
+      }
+      camera.updateProjectionMatrix();
+    }
+  });
+  return null;
+}
 
 // ---------- Central glowing node ----------
 function CentralNode({ count }: { count: number }) {
@@ -129,8 +154,6 @@ function CarModel({ url }: { url: string }) {
   return <primitive object={scene} scale={1.2} />;
 }
 
-
-
 // ---------- Side performance panel ----------
 function PerformancePanel({ car }: { car: CarDetails | null }) {
   if (!car) {
@@ -169,8 +192,6 @@ function PerformancePanel({ car }: { car: CarDetails | null }) {
         </span>
       </div>
 
-  
-
       <div className="grid grid-cols-2 gap-3">
         {stat("Top Speed", `${car.top_speed} km/h`)}
         {stat("0-100 km/h", `${car.acceleration_0_100}s`)}
@@ -199,10 +220,6 @@ function PerformancePanel({ car }: { car: CarDetails | null }) {
           </div>
         </div>
       </div>
-
-      {/* <div className="text-xs text-white/30">
-        Owner: {car.} · {car.phone}
-      </div> */}
     </div>
   );
 }
@@ -212,24 +229,47 @@ function Scene({
   cars,
   selectedId,
   setSelectedId,
+  radius,
+  rotSpeed,
 }: {
   cars: CarDetails[];
   selectedId: number | null;
   setSelectedId: (id: number) => void;
+  radius: number;
+  rotSpeed: number;
 }) {
+  const groupRef = useRef<THREE.Group>(null);
+
+  // Arrange cars evenly around a full circle
   const positions = useMemo(() => {
-    const spacingY = 1.0;
-    const radiusX = 6;
     const total = cars.length;
     return cars.map((_, i) => {
-      const y = (i - (total - 1) / 2) * spacingY;
-      const x = radiusX;
+      const angle = (i / total) * Math.PI * 2;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius;
       return [x, y, 0] as [number, number, number];
     });
-  }, [cars]);
+  }, [cars, radius]);
+
+  // Angle (in radians) of the currently selected car
+  const targetAngle = useMemo(() => {
+    const idx = cars.findIndex((c) => c.car_id === selectedId);
+    if (idx === -1) return 0;
+    return (idx / cars.length) * Math.PI * 2;
+  }, [cars, selectedId]);
+
+  useFrame((_, dt) => {
+    if (!groupRef.current) return;
+    // Rotate the whole rig so targetAngle lands at 0 (pointing at the panel)
+    const current = groupRef.current.rotation.z;
+    // shortest-path angle lerp to avoid spinning the long way around
+    let delta = -targetAngle - current;
+    delta = Math.atan2(Math.sin(delta), Math.cos(delta));
+    groupRef.current.rotation.z = current + delta * Math.min(1, dt * rotSpeed);
+  });
 
   return (
-    <>
+    <group ref={groupRef}>
       <ambientLight intensity={0.3} />
       <CentralNode count={cars.length} />
       {cars.map((car, i) => (
@@ -248,7 +288,7 @@ function Scene({
           onSelect={() => setSelectedId(car.car_id)}
         />
       ))}
-    </>
+    </group>
   );
 }
 
@@ -261,18 +301,27 @@ export default function ManageCars({ user_id, carswithperf }: Props) {
   const selectedCar =
     carswithperf.find((c) => c.car_id === selectedId) ?? null;
 
+
+
+
   return (
     <div className="w-full h-full bg-[#0b0b0d] rounded-2xl border border-white/10 flex overflow-hidden">
       <div className="flex-1 relative">
-        <Canvas camera={{ position: [0, 0, 30], fov: 45 }}>
-          <color attach="background" args={["#0b0b0d"]} />
-          <Scene
-            cars={carswithperf}
-            selectedId={selectedId}
-            setSelectedId={setSelectedId}
-          />
-        
-        </Canvas>
+      <Canvas>
+  <color attach="background" args={["#0b0b0d"]} />
+  <CameraRig camX={5} camY={0} camZ={12} fov={45} />
+  <Suspense fallback={null}>
+  <Scene
+              cars={carswithperf}
+              selectedId={selectedId}
+              setSelectedId={setSelectedId}
+              radius={6}
+              rotSpeed={4}
+            />
+  </Suspense>
+</Canvas>
+           
+         
       </div>
       <div className="p-4">
         <PerformancePanel car={selectedCar} />
