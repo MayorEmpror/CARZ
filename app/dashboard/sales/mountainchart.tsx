@@ -16,15 +16,6 @@ const MAKES = [
 const VEHICLE_TYPES = ["car", "mpv", "truck"] as const;
 const VEHICLE_TYPE_LABELS = ["Car", "SUV / MPV", "Truck"];
 
-// ---------- pricing axis ----------
-// vPIC has no price field anywhere (confirmed against its live API + docs —
-// it's a VIN-decoding/regulatory dataset, not a marketplace dataset). Every
-// free pricing API that exists (CarAPI, CarsXE, MarketCheck, VinAudit, etc.)
-// requires a paid/keyed account and isn't reachable from a keyless browser
-// fetch. So the price axis below is a small, static, transparently-labeled
-// reference table of approximate 2025 US starting MSRP per make — NOT live
-// data. Everything else (model counts -> height, category breadth -> color)
-// is still real, live vPIC data.
 const APPROX_STARTING_MSRP: Record<string, number> = {
   Toyota: 24000,
   Honda: 24000,
@@ -40,7 +31,7 @@ const APPROX_STARTING_MSRP: Record<string, number> = {
   Tesla: 40000,
 };
 const PRICE_TIER_LABELS = ["Budget", "Mid-range", "Premium"];
-const PRICE_TIER_BOUNDS = [25000, 42000]; // < first = tier 0, < second = tier 1, else tier 2
+const PRICE_TIER_BOUNDS = [25000, 42000];
 
 function priceTierIndex(make: string): number {
   const price = APPROX_STARTING_MSRP[make] ?? 30000;
@@ -49,10 +40,6 @@ function priceTierIndex(make: string): number {
   return 2;
 }
 
-// The row axis is now body-type × price-tier (3 × 3 = 9 rows) instead of
-// just body type (3 rows) — a real make only lands in one price tier, so
-// each column's real model counts settle into 3 of the 9 rows, the rest
-// stay at 0. This is what makes the terrain bigger/more varied.
 type RowDef = { typeIdx: number; typeLabel: string; tierIdx: number; tierLabel: string };
 const ROWS: RowDef[] = VEHICLE_TYPES.flatMap((_, typeIdx) =>
   PRICE_TIER_LABELS.map((tierLabel, tierIdx) => ({
@@ -69,7 +56,7 @@ type VpicModelResponse = { Count: number; Results: VpicModel[] };
 type VpicVehicleType = { VehicleTypeId: number; VehicleTypeName: string };
 type VpicTypeResponse = { Count: number; Results: VpicVehicleType[] };
 
-type ModelCountGrid = number[][]; // [rowIdx][makeIdx] -> real model count (0 outside the make's price tier)
+type ModelCountGrid = number[][];
 
 async function fetchModelCount(make: string, vehicleType: string): Promise<number> {
   const url = `${VPIC_BASE}/getmodelsformakeyear/make/${encodeURIComponent(
@@ -85,9 +72,6 @@ async function fetchModelCount(make: string, vehicleType: string): Promise<numbe
   }
 }
 
-/** Real 4th-dimension metric: how many distinct vehicle categories
- *  (car, truck, MPV, motorcycle, bus, trailer, etc.) a manufacturer
- *  produces overall — a genuine "portfolio breadth" signal from vPIC. */
 async function fetchVehicleTypeBreadth(make: string): Promise<number> {
   const url = `${VPIC_BASE}/getvehicletypesformake/${encodeURIComponent(make)}?format=json`;
   try {
@@ -100,12 +84,59 @@ async function fetchVehicleTypeBreadth(make: string): Promise<number> {
   }
 }
 
+// ---------- caching ----------
+// Two layers:
+// 1. In-memory module cache — instant reuse across remounts within the
+//    same JS context (e.g. React StrictMode double-invoke, tab switching
+//    within the SPA without a full reload).
+// 2. sessionStorage — survives a hard page refresh but is automatically
+//    cleared the moment the tab/browser window is closed, which is exactly
+//    "cache for this tab session, wipe on close" with zero manual cleanup.
+const SESSION_CACHE_KEY = "sales-mountain-vpic-cache-v1";
+
+type CachedPayload = { grid: ModelCountGrid; breadth: number[] };
+
 let cachedGrid: ModelCountGrid | null = null;
 let cachedBreadth: number[] | null = null;
 
-async function loadData(): Promise<{ grid: ModelCountGrid; breadth: number[] }> {
-  if (cachedGrid && cachedBreadth) return { grid: cachedGrid, breadth: cachedBreadth };
+function readSessionCache(): CachedPayload | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(SESSION_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CachedPayload;
+    if (!parsed?.grid || !parsed?.breadth) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
 
+function writeSessionCache(payload: CachedPayload) {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(SESSION_CACHE_KEY, JSON.stringify(payload));
+  } catch {
+    // sessionStorage can throw in private-browsing/quota edge cases —
+    // safe to ignore, in-memory cache still works for this session.
+  }
+}
+
+async function loadData(): Promise<{ grid: ModelCountGrid; breadth: number[] }> {
+  // fastest path: already loaded in this JS context
+  if (cachedGrid && cachedBreadth) {
+    return { grid: cachedGrid, breadth: cachedBreadth };
+  }
+
+  // next fastest: survived a page refresh within this tab session
+  const fromSession = readSessionCache();
+  if (fromSession) {
+    cachedGrid = fromSession.grid;
+    cachedBreadth = fromSession.breadth;
+    return fromSession;
+  }
+
+  // slow path: actually hit the NHTSA API
   const grid: ModelCountGrid = ROWS.map(() => new Array(MAKES.length).fill(0));
   const breadth: number[] = new Array(MAKES.length).fill(0);
 
@@ -131,6 +162,7 @@ async function loadData(): Promise<{ grid: ModelCountGrid; breadth: number[] }> 
 
   cachedGrid = grid;
   cachedBreadth = breadth;
+  writeSessionCache({ grid, breadth });
   return { grid, breadth };
 }
 
@@ -227,12 +259,6 @@ function smooth1D(arr: number[], passes = 2): number[] {
   return a;
 }
 
-// ---------- world scale ----------
-// WORLD_W carries the 12-make axis, so it stays wide. WORLD_D now needs to
-// hold 9 rows (3 body types × 3 price tiers) instead of 3, so it's grown
-// back up — this is the "bigger terrain" the price axis buys us. DATA_BAND_D
-// covers nearly all of that depth, so real vPIC data — not decorative
-// noise — is still what shapes the terrain.
 const WORLD_W = 44;
 const WORLD_D = 40;
 const MAX_HEIGHT = 9;
@@ -240,12 +266,6 @@ const DATA_BAND_D = 35;
 const RES_X = 300;
 const RES_Z = 280;
 
-/** Base terrain height: gentle rolling texture only, NOT a competing
- *  mountain range. This used to be a full ridged-fbm range at 70% of
- *  MAX_HEIGHT, which dwarfed the real data band. Now it's a soft fbm
- *  backdrop at ~10% weight — present for atmosphere, never dominant.
- *  Shared by the geometry generator AND label placement so labels always
- *  know exactly how tall the ground is beneath them. */
 function baseHeight(x: number, z: number) {
   const detail = fbm(x * 0.5, z * 0.5, 4);
   let h = detail * MAX_HEIGHT * 0.1;
@@ -256,8 +276,8 @@ function baseHeight(x: number, z: number) {
 }
 
 const terrainVertexShader = /* glsl */ `
-  attribute float aValue;   // height-band data signal (0..1)
-  attribute float aBreadth; // 4th axis: manufacturer breadth (0..1), spans whole plane
+  attribute float aValue;
+  attribute float aBreadth;
   varying float vHeight;
   varying float vValue;
   varying float vBreadth;
@@ -304,7 +324,6 @@ const terrainFragmentShader = /* glsl */ `
     return col;
   }
 
-  // data-band tint: low model count -> teal, high -> ember
   vec3 dataTint(float t) {
     vec3 low  = vec3(0.10, 0.30, 0.36);
     vec3 mid  = vec3(0.55, 0.42, 0.20);
@@ -313,11 +332,9 @@ const terrainFragmentShader = /* glsl */ `
     return mix(mid, high, smoothstep(0.5, 1.0, t));
   }
 
-  // 4th axis tint: manufacturer breadth -> violet/magenta hue, spans the
-  // WHOLE terrain (not just the data band), independent of height/count
   vec3 breadthTint(float t) {
-    vec3 low  = vec3(0.08, 0.10, 0.24); // narrow portfolio -> deep indigo
-    vec3 high = vec3(0.66, 0.22, 0.58); // broad portfolio -> magenta
+    vec3 low  = vec3(0.08, 0.10, 0.24);
+    vec3 high = vec3(0.66, 0.22, 0.58);
     return mix(low, high, smoothstep(0.0, 1.0, t));
   }
 
@@ -327,12 +344,9 @@ const terrainFragmentShader = /* glsl */ `
     float fineGrain = hash13(floor(vPosW * 22.0));
     vec3 base = rockTone(hNorm, grain * 0.6 + fineGrain * 0.4);
 
-    // layer 1: real model-count tint, confined to the data band (vValue > 0 there)
     vec3 t1 = dataTint(vValue);
     base = mix(base, t1, 0.46 * vValue);
 
-    // layer 2: real manufacturer-breadth tint, washes across the ENTIRE
-    // terrain at low opacity so it reads as an atmospheric/ambient signal
     vec3 t2 = breadthTint(vBreadth);
     base = mix(base, t2, 0.20);
 
@@ -343,13 +357,11 @@ const terrainFragmentShader = /* glsl */ `
     vec3 warmLight = vec3(1.0, 0.62, 0.35) * warmDiffuse * 0.85;
     vec3 coolLight = vec3(0.45, 0.75, 0.85) * coolDiffuse * 0.55;
 
-    // fake ambient occlusion in low, flat, dark crevices
     float ao = mix(0.72, 1.0, smoothstep(0.0, 0.35, hNorm));
 
     vec3 ambient = base * 0.26 * ao;
     vec3 lit = ambient + base * (warmLight + coolLight) * ao;
 
-    // subtle snow-glint specular, view dependent
     vec3 viewDir = normalize(cameraPosition - vPosW);
     vec3 halfDir = normalize(normalize(uLightDirWarm) + viewDir);
     float specPower = mix(6.0, 46.0, smoothstep(0.7, 1.0, hNorm));
@@ -415,7 +427,6 @@ function Terrain({
         dataVal = shaped;
       }
 
-      // 4th axis: breadth is sampled purely along X (per-make), spans full Z
       const uFull = THREE.MathUtils.clamp((x + WORLD_W / 2) / WORLD_W, 0, 1);
       const breadthVal = sample1D(smoothedBreadth, uFull) / maxBreadth;
 
@@ -441,11 +452,8 @@ function Terrain({
     });
   }, []);
 
-  // Precompute label + tick positions once, always resting ON TOP of the
-  // real terrain surface beneath them (fixes labels being buried under
-  // the mesh) instead of at a flat, arbitrary y.
   const makeLabels = useMemo(() => {
-    const labelZ = WORLD_D / 2 + 2.4; // outside the terrain footprint -> guaranteed flat ground
+    const labelZ = WORLD_D / 2 + 2.4;
     const tickZ = DATA_BAND_D / 2 + 0.5;
     return MAKES.map((make, i) => {
       const x = (i / (cols - 1)) * WORLD_W - WORLD_W / 2;
@@ -460,9 +468,6 @@ function Terrain({
     });
   }, [cols]);
 
-  // Two label tiers for the 9-row axis: an outer group label per body type
-  // (Car / SUV-MPV / Truck) and an inner label per price tier row, so the
-  // combined axis reads clearly instead of cramming 9 long strings together.
   const tierRowLabels = useMemo(() => {
     const labelX = -WORLD_W / 2 - 1.7;
     const tickX = -WORLD_W / 2 - 0.5;
@@ -537,7 +542,6 @@ function Terrain({
         castShadow
       />
 
-      {/* -------- hover marker: a small ring that sits exactly on the peak under the cursor -------- */}
       {hoverPoint && (
         <group position={[hoverPoint[0], hoverPoint[1] + 0.03, hoverPoint[2]]}>
           <mesh rotation={[-Math.PI / 2, 0, 0]}>
@@ -551,14 +555,12 @@ function Terrain({
         </group>
       )}
 
-      {/* -------- grid overlay on the data band floor -------- */}
       <gridHelper
         args={[Math.max(WORLD_W, DATA_BAND_D), cols, "#3a4a52", "#233038"]}
         position={[0, 0.03, 0]}
         scale={[1, 1, DATA_BAND_D / Math.max(WORLD_W, DATA_BAND_D)]}
       />
 
-      {/* -------- make (column) axis labels — rest on real ground beyond the terrain edge -------- */}
       {makeLabels.map(({ make, x, labelY, labelZ, tickY, tickZ }) => (
         <group key={make}>
           <Text
@@ -574,7 +576,6 @@ function Terrain({
           >
             {make}
           </Text>
-          {/* leader tick, sitting on the actual terrain surface at the band edge */}
           <mesh position={[x, tickY, tickZ]} rotation={[-Math.PI / 2, 0, 0]}>
             <planeGeometry args={[0.04, 0.5]} />
             <meshBasicMaterial color="#5fb0c9" toneMapped={false} />
@@ -582,7 +583,6 @@ function Terrain({
         </group>
       ))}
 
-      {/* -------- price-tier (row) axis labels — small, one per row -------- */}
       {tierRowLabels.map(({ key, tierLabel, z, labelY, labelX, tickY, tickX }) => (
         <group key={key}>
           <Text
@@ -605,7 +605,6 @@ function Terrain({
         </group>
       ))}
 
-      {/* -------- body-type (row group) axis labels — bold, one per 3-row group -------- */}
       {typeGroupLabels.map(({ label, z, labelY, labelX }) => (
         <Text
           key={label}
@@ -623,7 +622,6 @@ function Terrain({
         </Text>
       ))}
 
-      {/* -------- 4th axis label -------- */}
       <Text
         position={[0, axisTitleY, -WORLD_D / 2 + 2.0]}
         fontSize={0.55}
@@ -638,7 +636,6 @@ function Terrain({
         color wash = manufacturer category breadth
       </Text>
 
-      {/* -------- price-axis disclosure -------- */}
       <Text
         position={[0, axisTitleY - 0.02, -WORLD_D / 2 + 3.1]}
         fontSize={0.32}
@@ -707,7 +704,6 @@ export default function SalesMountainChart() {
     <div
       ref={containerRef}
       className="relative h-full w-full overflow-hidden"
-     
       onPointerDown={() => setAutoRotate(false)}
     >
       {!ready && !error && (
@@ -729,7 +725,6 @@ export default function SalesMountainChart() {
           <directionalLight
             position={[-24, 26, 10]}
             intensity={1.0}
-           
             castShadow
             shadow-mapSize={[2048, 2048]}
             shadow-camera-left={-32}
@@ -737,7 +732,7 @@ export default function SalesMountainChart() {
             shadow-camera-top={32}
             shadow-camera-bottom={-32}
           />
-          <directionalLight position={[24, 18, -10]} intensity={0.55}  />
+          <directionalLight position={[24, 18, -10]} intensity={0.55} />
 
           <GroundPlane />
           <Terrain grid={grid} breadth={breadth} onHover={handleHover} />
@@ -760,8 +755,6 @@ export default function SalesMountainChart() {
         </Canvas>
       )}
 
-      {/* Cursor-following tooltip, rendered in screen space so it's never
-          occluded by the terrain and always reads clearly over the mouse. */}
       {tooltip && (
         <div
           className="pointer-events-none absolute z-20 max-w-[16rem] whitespace-pre-line rounded-lg border border-white/10 bg-black/85 px-3 py-2 text-xs leading-snug text-zinc-100 shadow-lg backdrop-blur-sm"
