@@ -9,6 +9,7 @@ import  PaymentsTab from "./Handlers/PaymentsTsb"
 import Profile from "./Handlers/Profiles"
 import CarTab from "../admin/CarHandlers/CarHandler";
 import AddCar from "../admin/AddCar";
+import ManageCars from "./managecars/ManageCars"
 
 import {
     Menu,
@@ -21,10 +22,11 @@ import {
     PlusCircle,
     UserCog,
     Users,
+    Wrench
   } from "lucide-react";
   
 
-type Tab = "cars" | "customers" | "sales" | "payments" | "profile" | "addcar";
+type Tab = "cars" | "customers" | "sales" | "payments" | "profile" | "addcar" | "manage_cars";
 
 export default function DashboardLayout ({
   initialCars,
@@ -51,6 +53,7 @@ export default function DashboardLayout ({
     { tab: "profile", label: "profile", icon: PlusCircle },
     { tab: "payments", label: "payments", icon: ClipboardPen },
     { tab: "addcar", label: "AddCar", icon: PlusCircle },
+    { tab : "manage_cars", label : "manage", icon: Wrench},
   ];
    console.log("user id : " + user.user_id)
   return (
@@ -82,6 +85,7 @@ export default function DashboardLayout ({
           {activeTab === "payments" && <PaymentsTab payments ={payments}/>}
           {activeTab === "profile" &&  <Profile/>}
           {activeTab === "addcar" &&  <AddCar user_id = {user.user_id}/>}
+          {activeTab === "manage_cars" &&  <ManageCars user_id = {user.user_id}/>}
         </div>
       </div>
     </div>
