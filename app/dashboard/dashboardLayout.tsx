@@ -34,14 +34,16 @@ export default function DashboardLayout ({
   customers,
   payments,
   user,
-  carswithperf
+  carswithperf,
+
 }: {
   initialCars: Car[]  ;
   sales: Sales[]  ;
   customers: User[] ;
   payments: Payment[] ;
   user : User;
-  carswithperf: CarDetails[];
+    carswithperf: CarDetails[];
+
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("profile");
   const router = useRouter()
@@ -85,7 +87,7 @@ export default function DashboardLayout ({
           )}
           {activeTab === "sales" && <SalesTab sales={sales} />}
           {activeTab === "payments" && <PaymentsTab payments ={payments}/>}
-          {activeTab === "profile" &&  <Profile/>}
+          {activeTab === "profile" && <Profile user={user} />}
           {activeTab === "addcar" &&  <AddCar user_id = {user.user_id}/>}
           {activeTab === "manage_cars" &&  <ManageCars user_id = {user.user_id} carswithperf={carswithperf}/>}
         </div>

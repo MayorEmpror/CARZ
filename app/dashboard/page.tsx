@@ -1,6 +1,6 @@
-import { devNull } from "os";
+
 import DashboardLayout from "./dashboardLayout"
-import { getCurrentUser } from "@/lib/IAM/session";
+import {getCurrUser} from "@/lib/api/user"
 import {getCarByUserId} from "@/lib/api/car"
 import {getSalesByUserId} from "@/lib/api/sales"
 import  {getCustomers} from "@/lib/api/customers"
@@ -8,9 +8,9 @@ import {getPaymentsByUserId} from "@/lib/api/payments"
 import { requireUser } from "@/lib/IAM/validators";
 import {getCarwithPerfByUserId} from "@/lib/api/carperf"
 
-export default async function (){
+export default async function dashbaord (){
     const user = await requireUser();
-    console.log("user id : " + user.user_id  )
+    console.log("user id : " + user  )
     const cars = await getCarByUserId(user.user_id  );
     const sales = await getSalesByUserId(user.user_id  );
     const carswithperf = await getCarwithPerfByUserId(user.user_id );
@@ -25,5 +25,6 @@ export default async function (){
     customers={customers}
     user={user}
     carswithperf={carswithperf}
+   
     />
 }
