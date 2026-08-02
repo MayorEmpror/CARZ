@@ -1,15 +1,18 @@
 
 import DashboardLayout from "./dashboardLayout"
-import {getCurrUser} from "@/lib/api/user"
 import {getCarByUserId} from "@/lib/api/car"
 import {getSalesByUserId} from "@/lib/api/sales"
 import  {getCustomers} from "@/lib/api/customers"
 import {getPaymentsByUserId} from "@/lib/api/payments"
 import { requireUser } from "@/lib/IAM/validators";
 import {getCarwithPerfByUserId} from "@/lib/api/carperf"
+import { redirect } from "next/navigation"
 
 export default async function dashbaord (){
-    const user = await requireUser();
+  const user = await requireUser();
+  if (user.role != "owner") {
+    redirect("/login")
+  }
     console.log("user id : " + user  )
     const cars = await getCarByUserId(user.user_id  );
     const sales = await getSalesByUserId(user.user_id  );
