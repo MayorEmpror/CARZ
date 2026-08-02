@@ -105,7 +105,14 @@ export default function RegisterPage() {
       formElement.reset();
       setRole("customer");
 
-      router.push("/showroom");
+      const destination =
+        data.role === "owner"
+          ? "/dashboard"
+          : data.role === "driver"
+          ? "/dashboard"
+          : "/showroom";
+
+      router.push(destination);
       router.refresh();
     } catch (error) {
       console.error(error);

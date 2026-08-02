@@ -1,5 +1,6 @@
-import User from "@/lib/types";
+import { User } from "@/lib/types";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Phone,
   Mail,
@@ -8,6 +9,7 @@ import {
   ListFilter,
   Plus,
   Send,
+  UserRound,
 } from "lucide-react";
 
 type Props = {
@@ -60,15 +62,6 @@ const dummyMessages: Message[] = [
   { id: "4", from: "staff", author: "Ariana Davis", time: "11:40 AM", content: "Also, breakfast is included daily 7–10 AM in the main restaurant." },
 ];
 
-export const dummyUser: User = {
-  user_id: 5,
-  full_name: "Hashir Ali",
-  email: "hashirbutt2610@gmail.com",
-  phone: "+92-300-1234567",
-  password_hash: "" as any,
-  role: "customer",
-  created_at: new Date("2024-01-15").toISOString() as any,
-};
 
 /* ---------------- main component ---------------- */
 
@@ -101,6 +94,9 @@ export default function Profile({ user }: Props) {
 /* ---------------- Profile card ---------------- */
 
 function ProfileCard({ user }: Props) {
+  const router = useRouter();
+  const [switching, setSwitching] = useState(false);
+
   const initials = user.full_name
     .split(" ")
     .map((n) => n[0])
@@ -113,6 +109,37 @@ function ProfileCard({ user }: Props) {
     ? "—"
     : createdDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 
+  // Owners (and any other non-customer role) always have a sibling customer
+  // account created at registration time, so no need to check first.
+  const canSwitchToCustomer = user.role !== "customer";
+
+  async function handleSwitchToCustomer() {
+    if (switching) return;
+    setSwitching(true);
+
+    try {
+      const res = await fetch("/api/switchUser", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetRole: "customer" }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        console.error(result?.message ?? "Failed to switch to customer mode.");
+        setSwitching(false);
+        return;
+      }
+
+      router.push("/showroom");
+      router.refresh();
+    } catch (err) {
+      console.error(err);
+      setSwitching(false);
+    }
+  }
+
   return (
     <div className="flex h-full w-full flex-col overflow-y-auto rounded-2xl border border-neutral-800 bg-neutral-900 p-4 shadow-xl">
       <div className="flex items-center justify-between">
@@ -122,20 +149,33 @@ function ProfileCard({ user }: Props) {
         </button>
       </div>
 
-      <div className="mt-4 flex items-center gap-3">
-        <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-neutral-800 text-sm font-semibold text-neutral-400">
-          {initials}
-        </div>
-        <div>
-          <div className="flex items-center gap-1.5">
-            <span className="font-semibold text-neutral-100">{user.full_name}</span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-400">
-              <BadgeCheck size={12} />
-              {user.role}
-            </span>
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-neutral-800 text-sm font-semibold text-neutral-400">
+            {initials}
           </div>
-          <p className="mt-0.5 text-xs text-neutral-500">ID: {user.user_id}</p>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-semibold text-neutral-100">{user.full_name}</span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-400">
+                <BadgeCheck size={12} />
+                {user.role}
+              </span>
+            </div>
+            <p className="mt-0.5 text-xs text-neutral-500">ID: {user.user_id}</p>
+          </div>
         </div>
+
+        {canSwitchToCustomer && (
+          <button
+            onClick={handleSwitchToCustomer}
+            disabled={switching}
+            className="flex shrink-0 items-center gap-1.5 rounded-full border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <UserRound size={13} />
+            {switching ? "Switching..." : "Switch to Customer account"}
+          </button>
+        )}
       </div>
 
       <hr className="my-4 border-neutral-800" />
