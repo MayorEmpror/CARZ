@@ -1,54 +1,299 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CARZ 🚗
 
-## Getting Started
+A full-stack, multi-role car rental and marketplace platform built to simulate a real-world vehicle ecosystem.
 
-First, run the development server:
+CARZ allows customers to browse, rent, and purchase vehicles while enabling owners to manage their inventory, monitor performance, track transactions, and analyze business operations through dedicated dashboards.
+
+The platform combines modern frontend technologies, backend APIs, database architecture, and 3D visualization to create an interactive automotive management experience.
+
+---
+
+## 🚀 Features
+
+### Customer Features
+- Browse available vehicles
+- View detailed car information
+- Rent vehicles
+- Purchase vehicles
+- Track rental and purchase history
+- Manage customer profile
+- Interact with owners/drivers through chat
+
+### Owner Features
+- Add, update, and remove vehicle listings
+- Manage vehicle inventory
+- View rental and purchase activity
+- Track vehicle performance
+- Monitor revenue and analytics
+- Access owner management dashboard
+
+### Driver Features
+- Driver profile management
+- Customer interaction support
+- Rental workflow assistance
+
+### Platform Features
+- Role-based authentication and authorization
+- PostgreSQL relational database
+- REST API architecture
+- Real-time communication
+- Vehicle performance analytics
+- 3D vehicle visualization using Three.js
+- Responsive UI design
+
+---
+
+# 🛠️ Tech Stack
+
+## Frontend
+- Next.js (App Router)
+- React
+- TypeScript
+- Tailwind CSS
+- Three.js
+- React Three Fiber
+- Framer Motion
+
+## Backend
+- Next.js Route Handlers
+- Node.js
+- REST APIs
+
+## Database
+- PostgreSQL
+- SQL relational modeling
+- Docker database environment
+
+## Other Tools
+- Git & GitHub
+- Cloud storage for assets
+- Docker
+- Vercel deployment
+
+---
+
+# 📐 ER Diagram
+
+The database architecture is designed around users, vehicles, rentals, purchases, payments, and performance tracking.
+
+![ER Diagram](Images/ER_Diagram.png)
+
+---
+
+# 🖼️ Application Showcase
+
+## Landing Page
+
+The CARZ landing experience provides an interactive introduction to the platform with modern UI elements and 3D vehicle visualization.
+
+![CARZ Showcase](Images/Showcase.png)
+
+
+## Owner Management Dashboard
+
+The owner dashboard allows vehicle owners to manage listings, track operations, and monitor their automotive business.
+
+![Manager Dashboard](Images/Manager.png)
+
+---
+
+# 🔄 Development Workflow
+
+CARZ is developed using a layered and incremental development approach where every feature builds upon a stable foundation.
+
+The development process begins with designing the PostgreSQL database schema, including tables, relationships, constraints, and indexes. After establishing the data layer, the database environment is configured using Docker and populated with initial seed data.
+
+The backend layer is then implemented using Next.js Route Handlers to provide APIs for managing vehicles, rentals, purchases, payments, users, and performance metrics.
+
+Once the backend services are stable, frontend development begins with public-facing pages such as:
+
+- Landing page
+- Vehicle catalogue
+- Vehicle details
+- About page
+- Contact page
+- FAQ pages
+
+Authentication and authorization are introduced afterward, enabling secure access to role-based functionality for customers, owners, and drivers.
+
+The next phase focuses on core application workflows:
+
+### Customers can:
+- Browse vehicles
+- Rent cars
+- Purchase vehicles
+- View transaction history
+
+### Owners can:
+- Manage inventory
+- Track rentals
+- Monitor purchases
+- Analyze vehicle performance
+
+After completing the main workflows, additional features such as payment integration, notifications, optimization, testing, and production deployment are implemented.
+
+Throughout development, every feature follows a consistent workflow:
+
+1. Planning
+2. Database design
+3. Backend implementation
+4. Frontend integration
+5. Testing
+6. Git commit
+7. Deployment
+
+This approach keeps the project scalable, maintainable, and easy to extend.
+
+![Development Workflow](Images/WorkFlow.png)
+
+---
+
+# 📂 Project Structure
+
+```
+CARZ
+│
+├── app
+│   ├── api              # Backend API routes
+│   ├── dashboard        # Role-based dashboards
+│   ├── cars             # Vehicle pages
+│   └── components       # UI components
+│
+├── Images               # README assets
+│
+├── database             # SQL schema and seed files
+│
+├── public               # Static assets
+│
+├── components           # Reusable React components
+│
+└── package.json
+```
+
+---
+
+# ⚙️ Getting Started
+
+Clone the repository:
+
+```bash
+git clone <repository-url>
+```
+
+Navigate into the project:
+
+```bash
+cd CARZ
+```
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+or
+
+```bash
+pnpm install
+```
+
+---
+
+## Environment Variables
+
+Create a `.env` file in the root directory:
+
+```env
+DATABASE_URL=
+NEXT_PUBLIC_API_URL=
+AUTH_SECRET=
+```
+
+Configure the variables according to your PostgreSQL and deployment environment.
+
+---
+
+# ▶️ Running the Application
+
+Start the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+or:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open:
 
-## Learn More
+```
+http://localhost:3000
+```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# 🐳 Running PostgreSQL with Docker
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Start the database container:
 
-## Deploy on Vercel
+```bash
+docker compose up
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Run migrations or initialize the database schema:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# CARZ
-A full-stack, multi-role car rental and marketplace system built to simulate a real-world vehicle ecosystem where users can rent or buy cars, owners can manage listings and analytics, and drivers can interact with customers in real time.
+```bash
+psql < schema.sql
+```
 
-## ER DIAGRAM
-![ER Diagram](Images/ER_Diagram.png)
+---
 
+# 📦 Deployment
 
-## Development Workflow
+CARZ can be deployed using platforms such as:
 
-CARZ is developed using a layered, incremental approach where each feature builds upon a stable foundation. The project begins with designing the PostgreSQL database schema, including tables, relationships, constraints, and indexes, followed by setting up the local Docker database and seeding initial data. Once the data layer is complete, the backend APIs are implemented using Next.js Route Handlers to provide CRUD operations and business logic for cars, rentals, purchases, payments, and performance tracking.
+- Vercel for Next.js frontend
+- Managed PostgreSQL providers for production databases
 
-With the backend in place, development moves to the frontend by creating public-facing pages such as the landing page, vehicle catalogue, car details, and informational pages (About, Contact, FAQ, etc.). After visitors can browse the platform, authentication and authorization are introduced, allowing users to securely register, log in, and access role-based features as either customers or owners.
+Before deployment:
 
-The next phase focuses on dashboards and the application's core workflows. Customers can browse vehicles, rent or purchase cars, and review their transaction history, while owners can manage inventory, rentals, purchases, and vehicle performance through dedicated dashboards. Once these business workflows are functioning correctly, a payment gateway is integrated to securely process transactions and update payment statuses.
+1. Configure environment variables
+2. Run production build
 
-The final stage consists of refining the user interface, improving responsiveness and accessibility, optimizing performance, adding notifications and email functionality, testing the application thoroughly, and deploying the frontend and PostgreSQL database to production. Throughout development, each feature follows a consistent cycle of planning, implementation, testing, committing to Git, and pushing changes to GitHub, ensuring the project remains organized, maintainable, and easy to extend.
+```bash
+npm run build
+```
 
-![Workflow](Images/WorkFlow.png)
+3. Start production server
+
+```bash
+npm start
+```
+
+---
+
+# 🔮 Future Improvements
+
+- Online payment gateway integration
+- Live vehicle tracking
+- AI-based vehicle recommendations
+- Advanced analytics dashboard
+- Mobile application
+- Push notifications
+- Automated email workflows
+
+---
+
+# 👨‍💻 Author
+
+Developed as a full-stack software engineering project demonstrating:
+
+- Database architecture
+- Backend API development
+- Modern frontend engineering
+- 3D web experiences
+- Role-based application design
