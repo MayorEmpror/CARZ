@@ -78,12 +78,20 @@ export default function Login() {
       setStatus("success");
       setServerMessage(result?.message ?? "Logged in successfully.");
       formElement.reset();
-      router.push("/showroom");
+
+      // Route based on account role — sellers/owners and drivers land on
+      // the dashboard, everyone else goes to the showroom.
+      const role = result?.user?.role ?? result?.role;
+      const destination =
+        role === "owner" || role === "seller" || role === "driver"
+          ? "/dashboard"
+          : "/showroom";
+
+      router.push(destination);
       router.refresh();
 
       // TODO:
       // Save JWT / session
-      // Redirect to dashboard
     } catch (error) {
       console.error("Login error:", error);
 

@@ -47,8 +47,23 @@ export default function DashboardLayout ({
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("profile");
   const router = useRouter()
-  const handleLogout = () => {
-    console.log("handle admin logout here ");
+  async function handleLogout ()  {
+    const response = await fetch(
+        "/api/auth/logout",
+        {
+            method:"POST"
+        }
+    );
+
+
+    const result = await response.json();
+
+
+    if(result.success){
+      router.push("/login");
+      router.refresh();
+    }
+    return 
   };
   const navItems: NavItem<Tab>[] = [
     { tab: "cars", label: "Cars", icon: CarIcon },
