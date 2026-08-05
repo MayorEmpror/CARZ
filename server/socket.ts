@@ -1,0 +1,220 @@
+import dotenv from "dotenv";
+dotenv.config({ path: ".env.local" });
+
+import { createServer } from "http";
+import { Server, Socket } from "socket.io";
+import { Pool } from "pg";
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+const httpServer = createServer();
+
+const io = new Server(httpServer, {
+  cors: {
+    origin: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+    credentials: true,
+  },
+});
+
+// ---------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------
+interface AuthedUser {
+  user_id: number;
+  full_name: string;
+}
+
+// Augment socket.data with the authenticated user, filled in by the
+// auth middleware below. Every handler can trust this — it's never
+// taken from anything the client sends after the handshake.
+declare module "socket.io" {
+  interface Socket {
+    data: {
+      user: AuthedUser;
+    };
+  }
+}
+
+// ---------------------------------------------------------------------
+// Resolve a session cookie value -> real user, straight from Postgres.
+//
+// Your `sessions` table:
+//   session_id  UUID PK   (this IS the value stored in the session_id cookie)
+//   user_id     INT
+//   expires_at  TIMESTAMP
+//   created_at  TIMESTAMP
+//
+// So the "token" the client hands us in the socket handshake is really
+// just the session_id UUID — we look it up directly, no separate token
+// column involved.
+// ---------------------------------------------------------------------
+async function getUserFromToken(sessionId: string | undefined): Promise<AuthedUser | null> {
+  if (!sessionId) return null;
+
+  const result = await pool.query(
+    `
+    SELECT u.user_id, u.full_name
+    FROM sessions s
+    JOIN users u ON u.user_id = s.user_id
+    WHERE s.session_id = $1
+      AND s.expires_at > NOW()
+    `,
+    [sessionId]
+  );
+
+  return result.rows[0] ?? null;
+}
+
+// ---------------------------------------------------------------------
+// Auth middleware — runs once per connection, before "connection" fires.
+// The client sends its session token in the handshake (see lib/socket.ts
+// on the frontend). Reject the connection outright if it doesn't
+// resolve to a real, non-expired session.
+// ---------------------------------------------------------------------
+io.use(async (socket, next) => {
+  try {
+    const token = socket.handshake.auth?.token as string | undefined;
+    const user = await getUserFromToken(token);
+
+    if (!user) {
+      return next(new Error("Unauthorized"));
+    }
+
+    socket.data.user = user;
+    next();
+  } catch (err) {
+    console.error("[socket auth]", err);
+    next(new Error("Auth error"));
+  }
+});
+
+// ---------------------------------------------------------------------
+// Authorization: is this user actually part of this conversation?
+// Checked against conversation_members on every join/send — without
+// this, anyone who knows a conversation ID could read/post into it.
+// ---------------------------------------------------------------------
+async function userBelongsToConversation(userId: number, conversationId: number): Promise<boolean> {
+  const result = await pool.query(
+    `SELECT 1 FROM conversation_members WHERE conversation_id = $1 AND user_id = $2`,
+    [conversationId, userId]
+  );
+  const allowed = (result.rowCount ?? 0) > 0;
+  // Temporary debug log — remove once this is confirmed working.
+  console.log(`[membership check] user_id=${userId} conversation_id=${conversationId} -> ${allowed}`);
+  return allowed;
+}
+
+// ---------------------------------------------------------------------
+// Presence tracking (in-memory — fine for a single server instance;
+// move to Redis if you ever run more than one socket server process).
+// ---------------------------------------------------------------------
+const onlineUsers = new Map<number, Set<string>>();
+
+function markOnline(userId: number, socketId: string) {
+  if (!onlineUsers.has(userId)) onlineUsers.set(userId, new Set());
+  onlineUsers.get(userId)!.add(socketId);
+}
+function markOffline(userId: number, socketId: string) {
+  const set = onlineUsers.get(userId);
+  if (!set) return;
+  set.delete(socketId);
+  if (set.size === 0) onlineUsers.delete(userId);
+}
+
+io.on("connection", (socket: Socket) => {
+  const user = socket.data.user;
+  console.log(`[socket] ${user.full_name} (user_id=${user.user_id}) connected — ${socket.id}`);
+
+  markOnline(user.user_id, socket.id);
+  socket.broadcast.emit("user-online", user.user_id);
+
+  // --- join / leave -----------------------------------------------
+  socket.on("join-conversation", async (conversationId: number) => {
+    const allowed = await userBelongsToConversation(user.user_id, conversationId);
+    if (!allowed) {
+      socket.emit("chat-error", { message: "You are not part of this conversation." });
+      return;
+    }
+    socket.join(`conversation-${conversationId}`);
+  });
+
+  socket.on("leave-conversation", (conversationId: number) => {
+    socket.leave(`conversation-${conversationId}`);
+  });
+
+  // --- send message --------------------------------------------------
+  // Note: the payload no longer includes senderId or username. The
+  // server already knows who's sending (socket.data.user), from the
+  // authenticated handshake — trusting a client-supplied sender would
+  // let anyone impersonate anyone else.
+  socket.on(
+    "send-message",
+    async (data: { conversationId: number; content: string }) => {
+      try {
+        const content = data.content?.trim();
+        if (!content) return;
+
+        const allowed = await userBelongsToConversation(user.user_id, data.conversationId);
+        if (!allowed) {
+          socket.emit("chat-error", { message: "You are not part of this conversation." });
+          return;
+        }
+
+        // Insert, then join back to users in the same query so the
+        // username travels with the message — the client never has
+        // to trust or supply it.
+        const result = await pool.query(
+          `
+          WITH inserted AS (
+            INSERT INTO messages (conversation_id, sender_id, content)
+            VALUES ($1, $2, $3)
+            RETURNING *
+          )
+          SELECT inserted.*, u.full_name AS username
+          FROM inserted
+          JOIN users u ON u.user_id = inserted.sender_id
+          `,
+          [data.conversationId, user.user_id, content]
+        );
+
+        const message = result.rows[0];
+        io.to(`conversation-${data.conversationId}`).emit("new-message", message);
+      } catch (err) {
+        console.error("[send-message]", err);
+        socket.emit("chat-error", { message: "Failed to send message." });
+      }
+    }
+  );
+
+  // --- typing ----------------------------------------------------
+  socket.on("typing", (conversationId: number) => {
+    socket.to(`conversation-${conversationId}`).emit("typing", {
+      conversationId,
+      userId: user.user_id,
+      username: user.full_name,
+    });
+  });
+
+  socket.on("stop-typing", (conversationId: number) => {
+    socket.to(`conversation-${conversationId}`).emit("stop-typing", {
+      conversationId,
+      userId: user.user_id,
+    });
+  });
+
+  // --- disconnect --------------------------------------------------
+  socket.on("disconnect", () => {
+    markOffline(user.user_id, socket.id);
+    console.log(`[socket] ${user.full_name} disconnected — ${socket.id}`);
+    if (!onlineUsers.has(user.user_id)) {
+      socket.broadcast.emit("user-offline", user.user_id);
+    }
+  });
+});
+
+const PORT = process.env.SOCKET_PORT ? Number(process.env.SOCKET_PORT) : 3001;
+httpServer.listen(PORT, () => {
+  console.log(`Socket server running on :${PORT}`);
+});
