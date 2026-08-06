@@ -151,7 +151,7 @@ io.on("connection", (socket: Socket) => {
   // let anyone impersonate anyone else.
   socket.on(
     "send-message",
-    async (data: { conversationId: number; content: string }) => {
+    async (data: { conversationId: number; content: string; clientTempId?: string }) => {
       try {
         const content = data.content?.trim();
         if (!content) return;
@@ -162,9 +162,6 @@ io.on("connection", (socket: Socket) => {
           return;
         }
 
-        // Insert, then join back to users in the same query so the
-        // username travels with the message — the client never has
-        // to trust or supply it.
         const result = await pool.query(
           `
           WITH inserted AS (
@@ -179,11 +176,15 @@ io.on("connection", (socket: Socket) => {
           [data.conversationId, user.user_id, content]
         );
 
-        const message = result.rows[0];
+        // clientTempId is never stored in the DB — it only exists so the
+        // ORIGINAL sender's browser can match this confirmed message back
+        // to the optimistic one it already rendered, and swap it in.
+        // Everyone else in the room just ignores this extra field.
+        const message = { ...result.rows[0], clientTempId: data.clientTempId ?? null };
         io.to(`conversation-${data.conversationId}`).emit("new-message", message);
       } catch (err) {
         console.error("[send-message]", err);
-        socket.emit("chat-error", { message: "Failed to send message." });
+        socket.emit("chat-error", { message: "Failed to send message.", clientTempId: data.clientTempId ?? null });
       }
     }
   );

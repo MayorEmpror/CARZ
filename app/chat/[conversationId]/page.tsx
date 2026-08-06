@@ -11,10 +11,11 @@ import ChatClient from "./Chatclient";
 export default async function ChatPage({
   params,
 }: {
-  params: { conversationId: string };
+  params: Promise<{ conversationId: string }>;
 }) {
+  const { conversationId: rawId } = await params;
   const user = await requireUser();
-  const conversationId = Number(params.conversationId);
+  const conversationId = Number(rawId);
 
   return (
     <ChatClient

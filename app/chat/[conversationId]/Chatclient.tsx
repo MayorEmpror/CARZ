@@ -5,12 +5,15 @@ import { connectSocket, getSocket } from "@/lib/socket";
 import type { Socket } from "socket.io-client";
 
 type Message = {
-  message_id: number;
+  message_id: number | string; // string for optimistic temp messages before the server confirms
   conversation_id: number;
   sender_id: number;
-  username: string; // now comes from the server (joined with users), never client-supplied
+  username: string;
   content: string;
   created_at: string;
+  clientTempId?: string | null;
+  pending?: boolean; // true = optimistic, not yet confirmed by the server
+  failed?: boolean;  // true = server rejected it
 };
 
 interface CurrentUser {
@@ -45,6 +48,7 @@ function initials(name: string) {
 
 export default function ChatClient({ conversationId, currentUser }: ChatClientProps) {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
   const [text, setText] = useState("");
   const [connected, setConnected] = useState(false);
   const [typingUser, setTypingUser] = useState<string | null>(null);
@@ -53,6 +57,45 @@ export default function ChatClient({ conversationId, currentUser }: ChatClientPr
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingRef = useRef(false);
+
+  // ---- history fetch (REST) ---------------------------------------
+  // Runs independently of the socket connection — NOT awaited before
+  // connecting, and the socket connect NOT awaited before this fires.
+  // They race in parallel; whichever resolves first paints first.
+  useEffect(() => {
+    let cancelled = false;
+    setHistoryLoading(true);
+
+    fetch(`/api/chat/messages/${conversationId}`, { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
+        setMessages((prev) => {
+          // If any optimistic/live messages already arrived via the
+          // socket before history finished loading, keep them — merge
+          // instead of overwrite, deduped by message_id.
+          //
+          // IMPORTANT: drop still-PENDING optimistic messages here.
+          // Their temp UUID never matches the real message_id history
+          // returns, so keeping them risks a visible duplicate for the
+          // brief window before the live "new-message" event reconciles
+          // them. Dropping them is safe: either the DB write already
+          // finished (so it's already in `data.messages`), or the live
+          // socket event will add/reconcile it moments later anyway.
+          const historyIds = new Set((data.messages ?? []).map((m: Message) => m.message_id));
+          const extras = prev.filter((m) => !m.pending && !historyIds.has(m.message_id));
+          return [...(data.messages ?? []), ...extras];
+        });
+      })
+      .catch((err) => console.error("[chat] failed to load history:", err))
+      .finally(() => {
+        if (!cancelled) setHistoryLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [conversationId]);
 
   // ---- socket wiring --------------------------------------------------
   useEffect(() => {
@@ -69,9 +112,24 @@ export default function ChatClient({ conversationId, currentUser }: ChatClientPr
     }
     function handleNewMessage(message: Message) {
       if (message.conversation_id !== conversationId) return;
-      setMessages((prev) =>
-        prev.some((m) => m.message_id === message.message_id) ? prev : [...prev, message]
-      );
+
+      setMessages((prev) => {
+        // If this confirms one of OUR OWN optimistic messages (matched
+        // by the tempId we sent), replace the temp one in place rather
+        // than appending a duplicate.
+        if (message.clientTempId) {
+          const idx = prev.findIndex((m) => m.message_id === message.clientTempId);
+          if (idx !== -1) {
+            const next = [...prev];
+            next[idx] = message;
+            return next;
+          }
+        }
+        // Otherwise it's a message from someone else, or history
+        // already contains it — append only if genuinely new.
+        if (prev.some((m) => m.message_id === message.message_id)) return prev;
+        return [...prev, message];
+      });
       setTypingUser(null);
     }
     function handleTyping(payload: { conversationId: number; userId: number; username: string }) {
@@ -82,8 +140,17 @@ export default function ChatClient({ conversationId, currentUser }: ChatClientPr
       if (payload.conversationId !== conversationId) return;
       setTypingUser(null);
     }
-    function handleChatError(payload: { message: string }) {
+    function handleChatError(payload: { message: string; clientTempId?: string | null }) {
       setError(payload.message);
+      // Mark the specific optimistic message as failed, if this error
+      // was about one, instead of just showing a generic banner.
+      if (payload.clientTempId) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.message_id === payload.clientTempId ? { ...m, pending: false, failed: true } : m
+          )
+        );
+      }
     }
 
     connectSocket()
@@ -152,15 +219,36 @@ export default function ChatClient({ conversationId, currentUser }: ChatClientPr
       return;
     }
 
-    // Only conversationId + content go over the wire — sender identity
-    // is established server-side from the authenticated connection.
-    socket.emit("send-message", { conversationId, content: trimmed });
+    // ---- Optimistic UI ------------------------------------------
+    // Render the message in OUR OWN window immediately, before the
+    // server has confirmed anything. This is what makes sending feel
+    // instant without actually skipping the DB write for everyone
+    // else — the server still inserts first, then broadcasts; we're
+    // just not waiting on that round trip ourselves.
+    const tempId = crypto.randomUUID();
+    const optimisticMessage: Message = {
+      message_id: tempId,
+      conversation_id: conversationId,
+      sender_id: currentUser.user_id,
+      username: currentUser.full_name,
+      content: trimmed,
+      created_at: new Date().toISOString(),
+      clientTempId: tempId,
+      pending: true,
+    };
+    setMessages((prev) => [...prev, optimisticMessage]);
+
+    // The real send — server will insert into Postgres, then broadcast
+    // "new-message" (including this same tempId) to everyone in the
+    // room, including us. handleNewMessage() above swaps our temp
+    // entry out for the confirmed one when that arrives.
+    socket.emit("send-message", { conversationId, content: trimmed, clientTempId: tempId });
 
     setText("");
     isTypingRef.current = false;
     if (typingTimeout.current) clearTimeout(typingTimeout.current);
     socket.emit("stop-typing", conversationId);
-  }, [conversationId, text]);
+  }, [conversationId, text, currentUser]);
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -201,7 +289,13 @@ export default function ChatClient({ conversationId, currentUser }: ChatClientPr
 
       {/* Messages */}
       <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50 px-5 py-4">
-        {messages.length === 0 && (
+        {historyLoading && messages.length === 0 && (
+          <div className="flex h-full items-center justify-center text-sm text-slate-400">
+            Loading messages…
+          </div>
+        )}
+
+        {!historyLoading && messages.length === 0 && (
           <div className="flex h-full items-center justify-center text-sm text-slate-400">
             No messages yet — say hello.
           </div>
@@ -218,8 +312,10 @@ export default function ChatClient({ conversationId, currentUser }: ChatClientPr
               )}
               <div
                 className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${
-                  mine
-                    ? "rounded-br-sm bg-blue-600 text-white"
+                  msg.failed
+                    ? "rounded-br-sm bg-red-50 text-red-700 ring-1 ring-red-200"
+                    : mine
+                    ? `rounded-br-sm bg-blue-600 text-white ${msg.pending ? "opacity-60" : ""}`
                     : "rounded-bl-sm bg-white text-slate-900 ring-1 ring-slate-200"
                 }`}
               >
@@ -227,8 +323,12 @@ export default function ChatClient({ conversationId, currentUser }: ChatClientPr
                   <div className="mb-0.5 text-xs font-semibold text-slate-500">{msg.username}</div>
                 )}
                 <div className="whitespace-pre-wrap break-words">{msg.content}</div>
-                <div className={`mt-1 text-right text-[10px] ${mine ? "text-blue-100" : "text-slate-400"}`}>
-                  {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                <div className={`mt-1 text-right text-[10px] ${mine && !msg.failed ? "text-blue-100" : "text-slate-400"}`}>
+                  {msg.failed
+                    ? "Failed to send"
+                    : msg.pending
+                    ? "Sending…"
+                    : new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                 </div>
               </div>
             </div>
