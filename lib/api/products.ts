@@ -43,7 +43,7 @@ export async function getFilteredCars(filters: CarFilters) {
   console.log("VALUES:", values);
   
   const result = await pool.query(
-    `SELECT * FROM cars ${where} ORDER BY created_at DESC LIMIT 50`,
+    `SELECT * FROM cars ${where} ORDER BY created_at DESC `,
     values
   );
   console.log("ROWS:", result.rows.length);
