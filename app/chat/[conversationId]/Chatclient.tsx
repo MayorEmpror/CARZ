@@ -64,47 +64,51 @@ export default function ChatClient({ conversationId, currentUser }: ChatClientPr
   // They race in parallel; whichever resolves first paints first.
   useEffect(() => {
     let cancelled = false;
-    setHistoryLoading(true);
-
-    fetch(`/api/chat/messages/${conversationId}`, { credentials: "include" })
+  
+    fetch(`/api/chat/messages/${conversationId}`, {
+      credentials: "include",
+    })
       .then((res) => res.json())
       .then((data) => {
         if (cancelled) return;
+        setHistoryLoading(false);
+  
         setMessages((prev) => {
-          // If any optimistic/live messages already arrived via the
-          // socket before history finished loading, keep them — merge
-          // instead of overwrite, deduped by message_id.
-          //
-          // IMPORTANT: drop still-PENDING optimistic messages here.
-          // Their temp UUID never matches the real message_id history
-          // returns, so keeping them risks a visible duplicate for the
-          // brief window before the live "new-message" event reconciles
-          // them. Dropping them is safe: either the DB write already
-          // finished (so it's already in `data.messages`), or the live
-          // socket event will add/reconcile it moments later anyway.
-          const historyIds = new Set((data.messages ?? []).map((m: Message) => m.message_id));
-          const extras = prev.filter((m) => !m.pending && !historyIds.has(m.message_id));
+          const historyIds = new Set(
+            (data.messages ?? []).map((m: Message) => m.message_id)
+          );
+  
+          const extras = prev.filter(
+            (m) => !m.pending && !historyIds.has(m.message_id)
+          );
+  
           return [...(data.messages ?? []), ...extras];
         });
       })
-      .catch((err) => console.error("[chat] failed to load history:", err))
-      .finally(() => {
-        if (!cancelled) setHistoryLoading(false);
+      .catch((err) => {
+        if (cancelled) return;
+  
+        console.error("[chat] failed to load history:", err);
+        setHistoryLoading(false);
       });
-
+  
     return () => {
       cancelled = true;
     };
   }, [conversationId]);
 
+  
   // ---- socket wiring --------------------------------------------------
   useEffect(() => {
     let cancelled = false;
+    // null assignment to a possibly null socket of type Socket
     let socket: Socket | null = null;
 
     function handleConnect() {
       setConnected(true);
       setError(null);
+      // this is the emitter, "join conversation is the event listener and conv_id is the argument"
+      // "! clears out to TS that socket is not null at this point"
       socket!.emit("join-conversation", conversationId);
     }
     function handleDisconnect() {
