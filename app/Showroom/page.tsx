@@ -1,9 +1,9 @@
 import Topnav from "./Components/Topnav";
 import Cardisplay from "./Components/Cardisplay";
-import Chats from "./Components/Chats";
+
 import ShowroomShell from "./Components/ShowroomShell";
 
-type Tab = "cars" | "chat" | "settings";
+type Tab = "cars"  | "settings";
 
 export default async function ShowroomPage({
   searchParams,
@@ -17,7 +17,7 @@ export default async function ShowroomPage({
     <ShowroomShell activeTab={activeTab}>
       <Topnav />
       {activeTab === "cars" && <Cardisplay searchParams={searchParams} />}
-      {activeTab === "chat" && <Chats />}
+ 
     </ShowroomShell>
   );
 }
