@@ -1,18 +1,28 @@
 "use client";
-
 import { useRef, startTransition } from "react";
+import { usePathname } from "next/navigation";
 import { gsap } from "gsap";
 import { TransitionRouter } from "next-transition-router";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const firstLayer = useRef<HTMLDivElement | null>(null);
   const secondLayer = useRef<HTMLDivElement | null>(null);
+  const pathname = usePathname();
+
+  // Chat has its own persistent sidebar/layout (WhatsApp-style) --
+  // a full-screen wipe transition on every conversation switch would
+  // fight that and look broken. Skip the transition wrapper entirely
+  // for anything under /chat; every other route keeps it as-is.
+  const skipTransition = pathname?.startsWith("/chat");
+
+  if (skipTransition) {
+    return <main>{children}</main>;
+  }
 
   return (
     <TransitionRouter
       auto={true}
-      leave={(next,) => {
-
+      leave={(next) => {
         const tl = gsap
           .timeline({
             onComplete: next,
@@ -38,7 +48,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
             },
             "<50%",
           );
-
         return () => {
           tl.kill();
         };
@@ -71,21 +80,19 @@ export function Providers({ children }: { children: React.ReactNode }) {
               startTransition(next);
             });
           }, undefined, "<50%");
-
         return () => {
           tl.kill();
         };
       }}
     >
       <main>{children}</main>
-
       <div
         ref={firstLayer}
-        className="fixed inset-0 z-[999999999] translate-x-full bg-zinc-900"
+        className="fixed inset-0 z-999999999 translate-x-full bg-zinc-900"
       />
       <div
         ref={secondLayer}
-        className="fixed inset-0 z-[999999999] translate-x-full bg-zinc-950"
+        className="fixed inset-0 z-999999999 translate-x-full bg-zinc-950"
       />
     </TransitionRouter>
   );
