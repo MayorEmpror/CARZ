@@ -262,115 +262,145 @@ export default function ChatClient({ conversationId, currentUser }: ChatClientPr
   }
 
   return (
-    <div className="mx-auto flex h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4">
-        <div>
-          <h1 className="text-base font-semibold text-slate-900">Conversation #{conversationId}</h1>
-          <p className="text-xs text-slate-400">
-            {connected ? (
-              <span className="inline-flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Connected
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-slate-300" /> Connecting…
-              </span>
-            )}
-          </p>
-        </div>
-        <div className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold text-white ${colorForUser(currentUser.user_id)}`}>
-          {initials(currentUser.full_name)}
-        </div>
-      </div>
-
-      {/* Error banner */}
-      {error && (
-        <div className="border-b border-red-100 bg-red-50 px-5 py-2 text-xs text-red-600">
-          {error}
-        </div>
-      )}
-
-      {/* Messages */}
-      <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50 px-5 py-4">
-        {historyLoading && messages.length === 0 && (
-          <div className="flex h-full items-center justify-center text-sm text-slate-400">
-            Loading messages…
-          </div>
-        )}
-
-        {!historyLoading && messages.length === 0 && (
-          <div className="flex h-full items-center justify-center text-sm text-slate-400">
-            No messages yet — say hello.
-          </div>
-        )}
-
-        {messages.map((msg) => {
-          const mine = msg.sender_id === currentUser.user_id;
-          return (
-            <div key={msg.message_id} className={`flex items-end gap-2 ${mine ? "flex-row-reverse" : ""}`}>
-              {!mine && (
-                <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold text-white ${colorForUser(msg.sender_id)}`}>
-                  {initials(msg.username)}
-                </div>
-              )}
-              <div
-                className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${
-                  msg.failed
-                    ? "rounded-br-sm bg-red-50 text-red-700 ring-1 ring-red-200"
-                    : mine
-                    ? `rounded-br-sm bg-blue-600 text-white ${msg.pending ? "opacity-60" : ""}`
-                    : "rounded-bl-sm bg-white text-slate-900 ring-1 ring-slate-200"
-                }`}
-              >
-                {!mine && (
-                  <div className="mb-0.5 text-xs font-semibold text-slate-500">{msg.username}</div>
+    // =====================================================================
+        // Dark-mode redesign of the chat thread. Drop this in place of your
+        // existing return block — same variable names as before
+        // (msg, mine, colorForUser, initials, connected, error, historyLoading,
+        // messages, typingUser, bottomRef, text, handleChange, handleKeyDown,
+        // sendMessage, currentUser, conversationId), so no logic changes
+        // needed above this point.
+        //
+        // Uses Send/ArrowLeft icons from lucide-react, which is already a
+        // dependency in this project (used on the car details page). Add
+        // this import near your other imports:
+        //   import { Send } from "lucide-react";
+        // =====================================================================
+    
+        <div className=" flex h-full w-full max-w-4xl flex-col overflow-hidden  border border-white/10 bg-neutral-950 ">
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-white/10 bg-neutral-900/70 px-5 py-4 backdrop-blur-xl">
+            <div>
+              <h1 className="text-base font-semibold text-white">Conversation #{conversationId}</h1>
+              <p className="mt-0.5 text-xs text-neutral-500">
+                {connected ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.7)]" />
+                    Connected
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-neutral-500" />
+                    Connecting…
+                  </span>
                 )}
-                <div className="whitespace-pre-wrap break-words">{msg.content}</div>
-                <div className={`mt-1 text-right text-[10px] ${mine && !msg.failed ? "text-blue-100" : "text-slate-400"}`}>
-                  {msg.failed
-                    ? "Failed to send"
-                    : msg.pending
-                    ? "Sending…"
-                    : new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                </div>
-              </div>
+              </p>
             </div>
-          );
-        })}
-
-        {typingUser && (
-          <div className="flex items-center gap-2 text-xs text-slate-400">
-            <span className="flex gap-0.5">
-              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-300 [animation-delay:-0.3s]" />
-              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-300 [animation-delay:-0.15s]" />
-              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-300" />
-            </span>
-            {typingUser} is typing
+            <div
+              className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold text-white ring-2 ring-white/10 ${colorForUser(
+                currentUser.user_id
+              )}`}
+            >
+              {initials(currentUser.full_name)}
+            </div>
           </div>
-        )}
-
-        <div ref={bottomRef} />
-      </div>
-
-      {/* Input */}
-      <div className="flex items-end gap-2 border-t border-slate-200 bg-white px-4 py-3">
-        <textarea
-          value={text}
-          onChange={handleChange}
-          onKeyDown={handleKeyDown}
-          placeholder="Type a message…"
-          rows={1}
-          className="max-h-32 flex-1 resize-none rounded-2xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-        />
-        <button
-          onClick={sendMessage}
-          disabled={!text.trim()}
-          className="rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          Send
-        </button>
-      </div>
-    </div>
+    
+          {/* Error banner */}
+          {error && (
+            <div className="border-b border-red-500/20 bg-red-500/10 px-5 py-2 text-xs text-red-400">
+              {error}
+            </div>
+          )}
+    
+          {/* Messages */}
+          <div className="flex-1 space-y-3 overflow-y-auto bg-neutral-950 px-5 py-4 [background-image:radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.03)_1px,transparent_0)] [background-size:24px_24px] no-scrollbar">
+            {historyLoading && messages.length === 0 && (
+              <div className="flex h-full items-center justify-center text-sm text-neutral-500">
+                Loading messages…
+              </div>
+            )}
+    
+            {!historyLoading && messages.length === 0 && (
+              <div className="flex h-full items-center justify-center text-sm text-neutral-500">
+                No messages yet — say hello.
+              </div>
+            )}
+    
+            {messages.map((msg) => {
+              const mine = msg.sender_id === currentUser.user_id;
+              return (
+                <div key={msg.message_id} className={`flex items-end gap-2 ${mine ? "flex-row-reverse" : ""}`}>
+                  {!mine && (
+                    <div
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold text-white ring-1 ring-white/10 ${colorForUser(
+                        msg.sender_id
+                      )}`}
+                    >
+                      {initials(msg.username)}
+                    </div>
+                  )}
+                  <div
+                    className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-sm shadow-md ${
+                      msg.failed
+                        ? "rounded-br-sm border border-red-500/30 bg-red-500/10 text-red-300"
+                        : mine
+                        ? `rounded-br-sm bg-gradient-to-br from-blue-600 to-blue-500 text-white ${
+                            msg.pending ? "opacity-60" : ""
+                          }`
+                        : "rounded-bl-sm border border-white/5 bg-neutral-800/80 text-neutral-100 backdrop-blur"
+                    }`}
+                  >
+                    {!mine && (
+                      <div className="mb-0.5 text-xs font-semibold text-neutral-400">{msg.username}</div>
+                    )}
+                    <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+                    <div
+                      className={`mt-1 text-right text-[10px] ${
+                        msg.failed ? "text-red-400" : mine ? "text-blue-100/70" : "text-neutral-500"
+                      }`}
+                    >
+                      {msg.failed
+                        ? "Failed to send"
+                        : msg.pending
+                        ? "Sending…"
+                        : new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+    
+            {typingUser && (
+              <div className="flex items-center gap-2 text-xs text-neutral-500">
+                <span className="flex gap-0.5">
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-neutral-600 [animation-delay:-0.3s]" />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-neutral-600 [animation-delay:-0.15s]" />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-neutral-600" />
+                </span>
+                {typingUser} is typing
+              </div>
+            )}
+    
+            <div ref={bottomRef} />
+          </div>
+    
+          {/* Input */}
+          <div className="flex items-end gap-2 border-t border-white/10 bg-neutral-900/70 px-4 py-3 backdrop-blur-xl">
+            <textarea
+              value={text}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              placeholder="Type a message…"
+              rows={1}
+              className="max-h-32 flex-1 resize-none rounded-2xl border border-white/10 bg-neutral-800 px-4 py-2.5 text-sm text-white placeholder-neutral-500 outline-none transition focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
+            />
+            <button
+              onClick={sendMessage}
+              disabled={!text.trim()}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-500 text-white transition hover:from-blue-500 hover:to-blue-400 disabled:cursor-not-allowed disabled:from-neutral-700 disabled:to-neutral-700 disabled:opacity-50"
+            >
+              Send
+            </button>
+          </div>
+        </div>
   );
 }

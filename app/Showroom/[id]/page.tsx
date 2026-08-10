@@ -1,7 +1,8 @@
 import { carDetails } from "@/lib/api/car";
 import CarModelViewer from "@/components/CarModelViewer/CarModelViewer";
 import { Gauge, ArrowUpRight, Fuel, Star } from "lucide-react";
-import {Link} from "next-transition-router";
+import { Link } from "next-transition-router";
+import ContactOwnerButton from "../Components/Contactownerbutton";
 // ---------- helpers ----------
 
 function computeScore(car: {
@@ -110,7 +111,12 @@ export default async function CarDetails({
   const score = computeScore({ top_speed, acceleration_0_100, engine_power, torque });
   const label = scoreLabel(score);
   const efficiencyPct = Math.min((fuel_efficiency / 50) * 100, 100);
-  
+
+  // Shared classes so ContactOwnerButton's <button> looks identical to
+  // the other plain nav buttons around it.
+  const navButtonClass =
+    "px-4 py-2 rounded-full text-sm transition-colors bg-white/5 backdrop-blur-md border border-white/10 text-neutral-300 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed";
+
   return (
     <div className="min-h-screen relative overflow-hidden pointer-events-none bg-[#0B0B10]">
       <CarModelViewer modelUrl={model_path}/>
@@ -125,7 +131,7 @@ export default async function CarDetails({
           </div>
         </div>
         <nav className="flex items-center gap-2">
-          {["Models", "Services", "Shop", "Purchase", "Contact"].map((item, i) => (
+          {["Models", "Services", "Shop", "Purchase"].map((item, i) => (
             <button
               key={item}
               className={`px-4 py-2 rounded-full text-sm transition-colors ${
@@ -137,6 +143,9 @@ export default async function CarDetails({
               {item}
             </button>
           ))}
+          {/* Was a static "Contact" button — now creates/resumes a
+              chat with this car's owner and routes to it. */}
+          <ContactOwnerButton carId={Number(id)} className={navButtonClass} />
         </nav>
       </div>
 

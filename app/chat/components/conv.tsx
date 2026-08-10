@@ -100,89 +100,97 @@ export default function ConversationsSidebar({
     };
   }, []);
 
-  return (
-    <aside
-      className={[
-        "w-full shrink-0 flex-col border-r border-slate-200 bg-white md:flex md:w-80",
-        // Mobile: hide the sidebar entirely once a thread is open,
-        // so the thread can take the full screen (WhatsApp behavior).
-        activeId ? "hidden" : "flex",
-      ].join(" ")}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-200 px-4 py-4">
-        <h2 className="text-base font-semibold text-slate-900">Chats</h2>
-        <div
-          className={`flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-semibold text-white ${colorForUser(
-            currentUser.user_id
-          )}`}
-        >
-          {initials(currentUser.full_name)}
+  // =====================================================================
+    // Dark-mode redesign matching ChatThreadDarkUI.tsx. Same variable
+    // names as before (activeId, currentUser, colorForUser, initials,
+    // loading, conversations, timeAgo) -- drop in place of your existing
+    // return block, no logic changes needed above this.
+    // =====================================================================
+  
+    return (
+      <aside
+        className={[
+          "w-full shrink-0 flex-col border-r border-white/10 bg-neutral-800 md:flex md:w-80",
+          // Mobile: hide the sidebar entirely once a thread is open,
+          // so the thread can take the full screen (WhatsApp behavior).
+          activeId ? "hidden" : "flex",
+        ].join(" ")}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
+          <h2 className="text-base font-semibold text-white">Chats</h2>
+          <div
+            className={`flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-semibold text-white ring-2 ring-white/10 ${colorForUser(
+              currentUser.user_id
+            )}`}
+          >
+            {initials(currentUser.full_name)}
+          </div>
         </div>
-      </div>
-
-      {/* List */}
-      <div className="flex-1 overflow-y-auto">
-        {loading && (
-          <div className="px-4 py-6 text-center text-sm text-slate-400">
-            Loading conversations…
-          </div>
-        )}
-
-        {!loading && conversations.length === 0 && (
-          <div className="px-4 py-6 text-center text-sm text-slate-400">
-            No conversations yet.
-          </div>
-        )}
-
-        {conversations.map((c) => {
-          const isActive = String(c.conversation_id) === activeId;
-          return (
-            <Link
-              key={c.conversation_id}
-              href={`/chat/${c.conversation_id}`}
-              className={[
-                "flex items-center gap-3 border-b border-slate-100 px-4 py-3 transition",
-                isActive ? "bg-blue-50" : "hover:bg-slate-50",
-              ].join(" ")}
-            >
-              <div
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white ${colorForUser(
-                  c.other_user_id ?? c.conversation_id
-                )}`}
+  
+        {/* List */}
+        <div className="flex-1 overflow-y-auto">
+          {loading && (
+            <div className="px-4 py-6 text-center text-sm text-neutral-400">
+              Loading conversations…
+            </div>
+          )}
+  
+          {!loading && conversations.length === 0 && (
+            <div className="px-4 py-6 text-center text-sm text-neutral-400">
+              No conversations yet.
+            </div>
+          )}
+  
+          {conversations.map((c) => {
+            const isActive = String(c.conversation_id) === activeId;
+            return (
+              <Link
+                key={c.conversation_id}
+                href={`/chat/${c.conversation_id}`}
+                className={[
+                  "flex items-center gap-3 border-b border-white/5 px-4 py-3 transition",
+                  isActive
+                    ? "border-l-2 border-l-blue-500 bg-blue-500/10"
+                    : "border-l-2 border-l-transparent hover:bg-white/5",
+                ].join(" ")}
               >
-                {initials(c.title)}
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="truncate text-sm font-medium text-slate-100">
-                    {c.title}
-                  </span>
-                  {c.last_message_at && (
-                    <span className="shrink-0 text-[11px] text-slate-400">
-                      {timeAgo(c.last_message_at)}
-                    </span>
-                  )}
+                <div
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white ring-1 ring-white/10 ${colorForUser(
+                    c.other_user_id ?? c.conversation_id
+                  )}`}
+                >
+                  {initials(c.title)}
                 </div>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="truncate text-xs text-slate-500">
-                    {c.last_message ?? "No messages yet"}
-                  </span>
-                  {!!c.unread_count && (
-                    <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-semibold text-white">
-                      {c.unread_count}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-sm font-medium text-white">
+                      {c.title}
                     </span>
-                  )}
+                    {c.last_message_at && (
+                      <span className="shrink-0 text-[11px] text-neutral-400">
+                        {timeAgo(c.last_message_at)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-xs text-neutral-400">
+                      {c.last_message ?? "No messages yet"}
+                    </span>
+                    {!!c.unread_count && (
+                      <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-500 px-1 text-[10px] font-semibold text-white">
+                        {c.unread_count}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
-    </aside>
-  );
-}
+              </Link>
+            );
+          })}
+        </div>
+      </aside>
+    );
+  }
 
 // ---------------------------------------------------------------------
 // Mobile "back to conversations" note:

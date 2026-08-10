@@ -1,18 +1,11 @@
 // =====================================================================
-// GET /api/chat/conversations
+// GET  /api/chat/conversations        -- list my conversations (sidebar)
+// POST /api/chat/conversations        -- start (or resume) a conversation
+//                                         about a specific car
 //
-// Powers the sidebar list. Membership is determined by
-// conversation_members (same table messages/route.ts already uses for
-// auth) -- NOT conversations.owner_id/customer_id, which turned out to
-// be unrelated to actual participants (likely denormalized from the
-// car listing itself, not the chat).
-//
-// "title" is the OTHER member's name -- conversation_members has no
-// concept of "me" vs "them" beyond membership rows, so we just pick
-// whichever member isn't the current user.
-//
-// unread_count: messages sent by someone else in this conversation
-// with no matching message_reads row for me.
+// ASSUMPTION: cars table has an owner_id column (FK -> users.user_id),
+// matching the naming convention conversations.owner_id already uses.
+// If your cars table names it differently, change OWNER_COLUMN below.
 // =====================================================================
 
 import { NextResponse } from "next/server";
@@ -38,7 +31,6 @@ export async function GET() {
     JOIN conversations c
       ON c.conversation_id = my_membership.conversation_id
 
-    -- the other participant in this conversation (not me)
     JOIN conversation_members other_membership
       ON other_membership.conversation_id = c.conversation_id
      AND other_membership.user_id != $1
@@ -71,4 +63,106 @@ export async function GET() {
   );
 
   return NextResponse.json({ conversations: result.rows });
+}
+
+// ---------------------------------------------------------------------
+// POST /api/chat/conversations
+// Body: { car_id: number }
+//
+// Flow:
+//   1. Look up the car's owner_id.
+//   2. Refuse if the caller IS the owner (can't message yourself
+//      about your own listing).
+//   3. If a conversation about this car already exists between this
+//      owner/customer pair, reuse it instead of creating a duplicate
+//      thread every time "Contact" is clicked.
+//   4. Otherwise create the conversation + both membership rows
+//      atomically (single transaction — a conversation with only one
+//      member, or none, should never be possible).
+//
+// Returns { conversation_id } so the client can router.push(`/chat/${id}`).
+// ---------------------------------------------------------------------
+export async function POST(req: Request) {
+  const user = await requireUser();
+  const body = await req.json();
+  const carId = Number(body?.car_id);
+
+  if (!Number.isInteger(carId)) {
+    return NextResponse.json({ error: "Invalid car id" }, { status: 400 });
+  }
+
+  const carResult = await pool.query(
+    `SELECT owner_id FROM cars WHERE car_id = $1`,
+    [carId]
+  );
+  if (carResult.rowCount === 0) {
+    return NextResponse.json({ error: "Car not found" }, { status: 404 });
+  }
+  const ownerId: number = carResult.rows[0].owner_id;
+
+  if (ownerId === user.user_id) {
+    return NextResponse.json(
+      { error: "You can't start a conversation about your own car" },
+      { status: 400 }
+    );
+  }
+
+  // Reuse an existing thread for this (car, owner, customer) combo
+  // instead of spawning a new one every time Contact is clicked.
+  const existing = await pool.query(
+    `
+    SELECT c.conversation_id
+    FROM conversations c
+    WHERE c.car_id = $1
+      AND EXISTS (
+        SELECT 1 FROM conversation_members cm
+        WHERE cm.conversation_id = c.conversation_id AND cm.user_id = $2
+      )
+      AND EXISTS (
+        SELECT 1 FROM conversation_members cm
+        WHERE cm.conversation_id = c.conversation_id AND cm.user_id = $3
+      )
+    LIMIT 1
+    `,
+    [carId, ownerId, user.user_id]
+  );
+  if ((existing.rowCount ?? 0) > 0) {
+    return NextResponse.json({ conversation_id: existing.rows[0].conversation_id });
+  }
+
+  // Create conversation + both membership rows together. If the
+  // membership inserts failed after the conversation insert succeeded,
+  // you'd get an orphaned conversation with no members — the
+  // transaction prevents that.
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const convResult = await client.query(
+      `
+      INSERT INTO conversations (car_id, owner_id, customer_id)
+      VALUES ($1, $2, $3)
+      RETURNING conversation_id
+      `,
+      [carId, ownerId, user.user_id]
+    );
+    const conversationId = convResult.rows[0].conversation_id;
+
+    await client.query(
+      `
+      INSERT INTO conversation_members (conversation_id, user_id)
+      VALUES ($1, $2), ($1, $3)
+      `,
+      [conversationId, ownerId, user.user_id]
+    );
+
+    await client.query("COMMIT");
+    return NextResponse.json({ conversation_id: conversationId });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("[chat] failed to create conversation:", err);
+    return NextResponse.json({ error: "Failed to start conversation" }, { status: 500 });
+  } finally {
+    client.release();
+  }
 }
