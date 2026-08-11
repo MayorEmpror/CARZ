@@ -9,6 +9,7 @@ type Tab = "cars" | "chat" | "settings";
 
 const navItems: NavItem<Tab>[] = [
   { tab: "cars", label: "Cars", icon: Car },
+  { tab: "chat", label: "chat", icon: MessageSquare },
   { tab: "settings", label: "Settings", icon: Settings },
 ];
 export default function ShowroomShell({
@@ -22,8 +23,8 @@ export default function ShowroomShell({
   const pathname = usePathname();
 
   function setActiveTab(tab: Tab) {
-    if (tab === "settings") {
-      router.push("/settings");
+    if (tab === "chat") {
+      router.push("/chat");
       return;
     }
     router.push(`${pathname}?tab=${tab}`);

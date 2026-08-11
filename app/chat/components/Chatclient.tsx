@@ -3,6 +3,24 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { connectSocket, getSocket } from "@/lib/socket";
 import type { Socket } from "socket.io-client";
+import {
+  MessageCircle,
+  Hash,
+  UserRound,
+  Calendar,
+  Star,
+  CarFront,
+  Fuel,
+  Cog,
+  Link as LinkIcon,
+  Clock,
+} from "lucide-react";
+import { Car } from "@/lib/types";
+import ConversationInfoPanel, {
+  ConversationMember,
+  ConversationFile,
+  ConversationLink,
+} from "./Conversationinfopanel";
 
 type Message = {
   message_id: number | string; // string for optimistic temp messages before the server confirms
@@ -24,6 +42,11 @@ interface CurrentUser {
 interface ChatClientProps {
   conversationId: number;
   currentUser: CurrentUser;
+  car: Car;
+  members?: ConversationMember[];
+  media?: ConversationFile[];
+  documents?: ConversationFile[];
+  links?: ConversationLink[];
 }
 
 // Deterministic pastel color per user, so each person's avatar/name is
@@ -46,13 +69,129 @@ function initials(name: string) {
     .join("");
 }
 
-export default function ChatClient({ conversationId, currentUser }: ChatClientProps) {
+// ---- small presentational helpers for the sidebar ----------------------
+function formatPrice(price: string) {
+  const n = Number(price);
+  if (Number.isNaN(n)) return price;
+  return n.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+}
+
+function formatDate(date: Date | string) {
+  const d = typeof date === "string" ? new Date(date) : date;
+  if (Number.isNaN(d.getTime())) return String(date);
+  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
+function statusColor(status: string) {
+  switch (status?.toLowerCase()) {
+    case "available":
+      return "bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30";
+    case "sold":
+      return "bg-red-500/15 text-red-400 ring-1 ring-red-500/30";
+    case "pending":
+      return "bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/30";
+    default:
+      return "bg-neutral-500/15 text-neutral-400 ring-1 ring-neutral-500/30";
+  }
+}
+
+function DetailRow({
+  icon: Icon,
+  label,
+  value,
+  mono = false,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: React.ReactNode;
+  mono?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-3.5 py-3">
+      <span className="flex items-center gap-2.5 text-xs text-neutral-500">
+        <Icon className="h-3.5 w-3.5 shrink-0 text-neutral-600" strokeWidth={1.75} />
+        {label}
+      </span>
+      <span
+        className={`max-w-[55%] truncate text-right text-xs font-medium text-neutral-200 ${
+          mono ? "font-mono text-[11px] text-neutral-400" : ""
+        }`}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
+// ---- the car details tab content, showing every Car field except `model` --------
+function CarSidebarContent({ car }: { car: Car }) {
+  return (
+    <>
+      {/* Image card */}
+      {car.image_url && (
+        <div className="overflow-hidden rounded-2xl border border-white/5 bg-gradient-to-b from-neutral-900 to-black">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={car.image_url}
+            alt={`${car.make} ${car.model}`}
+            className="aspect-video w-full object-cover h-70"
+          />
+        </div>
+      )}
+
+      {/* Title + status */}
+      <div className="mt-4 flex items-center justify-between">
+        <h2 className="text-base font-semibold text-white">
+          {car.year} {car.make}
+        </h2>
+        <span
+          className={`inline-block shrink-0 rounded-full px-2.5 py-1 text-[10px] font-medium capitalize ${statusColor(
+            car.status
+          )}`}
+        >
+          {car.status}
+        </span>
+      </div>
+
+      {/* Price hero */}
+      <div className="mt-3 rounded-2xl border border-white/5 bg-black/40 px-4 py-3">
+        <div className="text-[10px] uppercase tracking-wide text-neutral-500">Price</div>
+        <div className="mt-0.5 text-xl font-semibold text-white">{formatPrice(car.price)}</div>
+        <div className="mt-1 flex items-center gap-1 text-xs text-neutral-400">
+          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" strokeWidth={0} />
+          {car.rating}
+          <span className="text-neutral-600">· {car.rating_count} ratings</span>
+        </div>
+      </div>
+
+      {/* Spec details */}
+      <div className="mt-4 divide-y divide-white/5 overflow-hidden rounded-2xl border border-white/5 bg-black/20">
+        <DetailRow icon={Calendar} label="Year" value={car.year} />
+        <DetailRow icon={CarFront} label="Body type" value={car.body_type} />
+        <DetailRow icon={Fuel} label="Fuel type" value={car.fuel_type} />
+        <DetailRow icon={Cog} label="Transmission" value={car.transmission} />
+ 
+      </div>
+    </>
+  );
+}
+
+export default function ChatClient({
+  conversationId,
+  currentUser,
+  car,
+  members = [],
+  media = [],
+  documents = [],
+  links = [],
+}: ChatClientProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [text, setText] = useState("");
   const [connected, setConnected] = useState(false);
   const [typingUser, setTypingUser] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [convCar, setconvCar] = useState<Car>(car);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -64,7 +203,7 @@ export default function ChatClient({ conversationId, currentUser }: ChatClientPr
   // They race in parallel; whichever resolves first paints first.
   useEffect(() => {
     let cancelled = false;
-  
+
     fetch(`/api/chat/messages/${conversationId}`, {
       credentials: "include",
     })
@@ -72,32 +211,31 @@ export default function ChatClient({ conversationId, currentUser }: ChatClientPr
       .then((data) => {
         if (cancelled) return;
         setHistoryLoading(false);
-  
+
         setMessages((prev) => {
           const historyIds = new Set(
             (data.messages ?? []).map((m: Message) => m.message_id)
           );
-  
+
           const extras = prev.filter(
             (m) => !m.pending && !historyIds.has(m.message_id)
           );
-  
+
           return [...(data.messages ?? []), ...extras];
         });
       })
       .catch((err) => {
         if (cancelled) return;
-  
+
         console.error("[chat] failed to load history:", err);
         setHistoryLoading(false);
       });
-  
+
     return () => {
       cancelled = true;
     };
   }, [conversationId]);
 
-  
   // ---- socket wiring --------------------------------------------------
   useEffect(() => {
     let cancelled = false;
@@ -262,145 +400,145 @@ export default function ChatClient({ conversationId, currentUser }: ChatClientPr
   }
 
   return (
-    // =====================================================================
-        // Dark-mode redesign of the chat thread. Drop this in place of your
-        // existing return block — same variable names as before
-        // (msg, mine, colorForUser, initials, connected, error, historyLoading,
-        // messages, typingUser, bottomRef, text, handleChange, handleKeyDown,
-        // sendMessage, currentUser, conversationId), so no logic changes
-        // needed above this point.
-        //
-        // Uses Send/ArrowLeft icons from lucide-react, which is already a
-        // dependency in this project (used on the car details page). Add
-        // this import near your other imports:
-        //   import { Send } from "lucide-react";
-        // =====================================================================
-    
-        <div className=" flex h-full w-full max-w-4xl flex-col overflow-hidden  border border-white/10 bg-neutral-950 ">
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-white/10 bg-neutral-900/70 px-5 py-4 backdrop-blur-xl">
-            <div>
-              <h1 className="text-base font-semibold text-white">Conversation #{conversationId}</h1>
-              <p className="mt-0.5 text-xs text-neutral-500">
-                {connected ? (
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.7)]" />
-                    Connected
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-neutral-500" />
-                    Connecting…
-                  </span>
-                )}
-              </p>
-            </div>
-            <div
-              className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold text-white ring-2 ring-white/10 ${colorForUser(
-                currentUser.user_id
-              )}`}
-            >
-              {initials(currentUser.full_name)}
-            </div>
-          </div>
-    
-          {/* Error banner */}
-          {error && (
-            <div className="border-b border-red-500/20 bg-red-500/10 px-5 py-2 text-xs text-red-400">
-              {error}
-            </div>
-          )}
-    
-          {/* Messages */}
-          <div className="flex-1 space-y-3 overflow-y-auto bg-neutral-950 px-5 py-4 [background-image:radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.03)_1px,transparent_0)] [background-size:24px_24px] no-scrollbar">
-            {historyLoading && messages.length === 0 && (
-              <div className="flex h-full items-center justify-center text-sm text-neutral-500">
-                Loading messages…
-              </div>
-            )}
-    
-            {!historyLoading && messages.length === 0 && (
-              <div className="flex h-full items-center justify-center text-sm text-neutral-500">
-                No messages yet — say hello.
-              </div>
-            )}
-    
-            {messages.map((msg) => {
-              const mine = msg.sender_id === currentUser.user_id;
-              return (
-                <div key={msg.message_id} className={`flex items-end gap-2 ${mine ? "flex-row-reverse" : ""}`}>
-                  {!mine && (
-                    <div
-                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold text-white ring-1 ring-white/10 ${colorForUser(
-                        msg.sender_id
-                      )}`}
-                    >
-                      {initials(msg.username)}
-                    </div>
-                  )}
-                  <div
-                    className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-sm shadow-md ${
-                      msg.failed
-                        ? "rounded-br-sm border border-red-500/30 bg-red-500/10 text-red-300"
-                        : mine
-                        ? `rounded-br-sm bg-gradient-to-br from-blue-600 to-blue-500 text-white ${
-                            msg.pending ? "opacity-60" : ""
-                          }`
-                        : "rounded-bl-sm border border-white/5 bg-neutral-800/80 text-neutral-100 backdrop-blur"
-                    }`}
-                  >
-                    {!mine && (
-                      <div className="mb-0.5 text-xs font-semibold text-neutral-400">{msg.username}</div>
-                    )}
-                    <div className="whitespace-pre-wrap break-words">{msg.content}</div>
-                    <div
-                      className={`mt-1 text-right text-[10px] ${
-                        msg.failed ? "text-red-400" : mine ? "text-blue-100/70" : "text-neutral-500"
-                      }`}
-                    >
-                      {msg.failed
-                        ? "Failed to send"
-                        : msg.pending
-                        ? "Sending…"
-                        : new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-    
-            {typingUser && (
-              <div className="flex items-center gap-2 text-xs text-neutral-500">
-                <span className="flex gap-0.5">
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-neutral-600 [animation-delay:-0.3s]" />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-neutral-600 [animation-delay:-0.15s]" />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-neutral-600" />
+    <div className="flex h-full w-full max-w-7xl overflow-hidden border border-white/10 bg-[#131318]">
+      {/* Main chat column */}
+      <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden bg-[#131318]">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-white/10 bg-[#131318] px-5 py-4 backdrop-blur-xl">
+          <div>
+            <h1 className="text-base font-semibold text-white">{convCar.make + " " + convCar.model}</h1>
+            <p className="mt-0.5 text-xs text-neutral-500">
+              {connected ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.7)]" />
+                  Connected
                 </span>
-                {typingUser} is typing
-              </div>
-            )}
-    
-            <div ref={bottomRef} />
+              ) : (
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-neutral-500" />
+                  Connecting…
+                </span>
+              )}
+            </p>
           </div>
-    
-          {/* Input */}
-          <div className="flex items-end gap-2 border-t border-white/10 bg-neutral-900/70 px-4 py-3 backdrop-blur-xl">
-            <textarea
-              value={text}
-              onChange={handleChange}
-              onKeyDown={handleKeyDown}
-              placeholder="Type a message…"
-              rows={1}
-              className="max-h-32 flex-1 resize-none rounded-2xl border border-white/10 bg-neutral-800 px-4 py-2.5 text-sm text-white placeholder-neutral-500 outline-none transition focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
-            />
-            <button
-              onClick={sendMessage}
-              disabled={!text.trim()}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-500 text-white transition hover:from-blue-500 hover:to-blue-400 disabled:cursor-not-allowed disabled:from-neutral-700 disabled:to-neutral-700 disabled:opacity-50"
-            >
-              Send
-            </button>
+          <div
+            className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold text-white ring-2 ring-white/10 ${colorForUser(
+              currentUser.user_id
+            )}`}
+          >
+            {initials(currentUser.full_name)}
           </div>
         </div>
+
+        {/* Error banner */}
+        {error && (
+          <div className="border-b border-red-500/20 bg-red-500/10 px-5 py-2 text-xs text-red-400">
+            {error}
+          </div>
+        )}
+
+        {/* Messages */}
+        <div className="flex-1 space-y-3 overflow-y-auto bg-black px-5 py-4 [background-image:radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.03)_1px,transparent_0)] [background-size:24px_24px] no-scrollbar">
+          {historyLoading && messages.length === 0 && (
+            <div className="flex h-full items-center justify-center text-sm text-neutral-500">
+              Loading messages…
+            </div>
+          )}
+
+          {!historyLoading && messages.length === 0 && (
+            <div className="flex h-full items-center justify-center text-sm text-neutral-500">
+              No messages yet — say hello.
+            </div>
+          )}
+
+          {messages.map((msg) => {
+            const mine = msg.sender_id === currentUser.user_id;
+            return (
+              <div key={msg.message_id} className={`flex items-end gap-2 ${mine ? "flex-row-reverse" : ""}`}>
+                {!mine && (
+                  <div
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold text-white ring-1 ring-white/10 ${colorForUser(
+                      msg.sender_id
+                    )}`}
+                  >
+                    {initials(msg.username)}
+                  </div>
+                )}
+                <div
+                  className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-sm shadow-md ${
+                    msg.failed
+                      ? "rounded-br-sm border border-red-500/30 bg-[#131318] text-red-300"
+                      : mine
+                      ? `rounded-br-sm bg-linear-to-br from-blue-600 to-blue-500 text-white ${
+                          msg.pending ? "opacity-60" : ""
+                        }`
+                      : "rounded-bl-sm border border-white/5 bg-[#131318] text-neutral-100 backdrop-blur"
+                  }`}
+                >
+                  {!mine && (
+                    <div className="mb-0.5 text-xs font-semibold text-neutral-400">{msg.username}</div>
+                  )}
+                  <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+                  <div
+                    className={`mt-1 text-right text-[10px] ${
+                      msg.failed ? "text-red-400" : mine ? "text-blue-100/70" : "text-neutral-500"
+                    }`}
+                  >
+                    {msg.failed
+                      ? "Failed to send"
+                      : msg.pending
+                      ? "Sending…"
+                      : new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          {typingUser && (
+            <div className="flex items-center gap-2 text-xs text-neutral-500">
+              <span className="flex gap-0.5">
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-neutral-600 [animation-delay:-0.3s]" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-neutral-600 [animation-delay:-0.15s]" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-neutral-600" />
+              </span>
+              {typingUser} is typing
+            </div>
+          )}
+
+          <div ref={bottomRef} />
+        </div>
+
+        {/* Input */}
+        <div className="flex items-end gap-2 border-t border-white/10 bg-[#131318] px-4 py-3 backdrop-blur-xl">
+          <textarea
+            value={text}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            placeholder="Type a message…"
+            rows={1}
+            className="max-h-32 flex-1 resize-none rounded-2xl border border-white/10 bg-black px-4 py-2.5 text-sm text-white placeholder-neutral-500 outline-none transition focus:border-blue-500/10 focus:ring-2 focus:ring-blue-500/20"
+          />
+          <button
+            onClick={sendMessage}
+            disabled={!text.trim()}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-blue-600 to-blue-500 text-white transition hover:from-blue-500 hover:to-blue-400 disabled:cursor-not-allowed disabled:from-neutral-900 disabled:to-neutral-900 disabled:opacity-50"
+          >
+            <MessageCircle />
+          </button>
+        </div>
+      </div>
+
+      {/* Right sidebar: car details + group info stacked together */}
+      <div className="hidden w-[20rem] shrink-0 flex-col overflow-y-auto border-l border-white/10 bg-[#131318] md:flex">
+        <div className="p-4">
+          <CarSidebarContent car={convCar} />
+        </div>
+
+        <div className="mx-4 h-px bg-white/5" />
+
+        <ConversationInfoPanel members={members} media={media} documents={documents} links={links} />
+      </div>
+    </div>
   );
 }

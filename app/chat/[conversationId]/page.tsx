@@ -13,6 +13,7 @@
 
 import { requireUser } from "@/lib/IAM/validators";
 import ChatClient from "../components/Chatclient";
+import {getCarById} from "@/lib/api/car"
 
 export default async function ChatThreadPage({
   params,
@@ -22,11 +23,15 @@ export default async function ChatThreadPage({
   const { conversationId: rawId } = await params;
   const user = await requireUser();
   const conversationId = Number(rawId);
-
+  console.log(conversationId)
+  const car = await getCarById(conversationId)
+  
+ 
   return (
     <ChatClient
       conversationId={conversationId}
       currentUser={{ user_id: user.user_id, full_name: user.full_name }}
+      car={car}
     />
   );
 }

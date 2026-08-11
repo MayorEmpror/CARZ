@@ -110,7 +110,7 @@ export default function ConversationsSidebar({
     return (
       <aside
         className={[
-          "w-full shrink-0 flex-col border-r border-white/10 bg-neutral-800 md:flex md:w-80",
+          "w-full shrink-0 flex-col border-r border-white/10 bg-[#131318] md:flex md:w-80",
           // Mobile: hide the sidebar entirely once a thread is open,
           // so the thread can take the full screen (WhatsApp behavior).
           activeId ? "hidden" : "flex",
@@ -178,7 +178,7 @@ export default function ConversationsSidebar({
                       {c.last_message ?? "No messages yet"}
                     </span>
                     {!!c.unread_count && (
-                      <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-500 px-1 text-[10px] font-semibold text-white">
+                      <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-blue-600 to-blue-500 px-1 text-[10px] font-semibold text-white">
                         {c.unread_count}
                       </span>
                     )}

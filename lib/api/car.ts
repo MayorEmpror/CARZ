@@ -24,8 +24,6 @@ export async function carDetails(id : string): Promise<CarDetails>{
     
 }
 
-
-
 export async function editCars(id: number, data : Partial<Car>): Promise<Car> {
     const res = await fetch(`/api/cars/${id}`, {
         method: "PUT",
@@ -120,5 +118,16 @@ export async function getCarByUserId(user_id: number): Promise<Car[]> {
     throw new Error("Failed to fetch cars");
   }
 
+  return res.json();
+}
+
+export async function getCarById(conv_id: number): Promise<Car[]>{
+ 
+  const res = await fetch(`${process.env.HOST}/api/getcarbyid?conv_id=${conv_id}`, {
+    cache: "no-store",
+    })
+  if (!res.ok) {
+      throw new Error("Failed to fetch the car")
+  }
   return res.json();
 }
