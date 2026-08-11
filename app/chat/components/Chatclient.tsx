@@ -5,15 +5,12 @@ import { connectSocket, getSocket } from "@/lib/socket";
 import type { Socket } from "socket.io-client";
 import {
   MessageCircle,
-  Hash,
-  UserRound,
+ 
   Calendar,
   Star,
   CarFront,
   Fuel,
   Cog,
-  Link as LinkIcon,
-  Clock,
 } from "lucide-react";
 import { Car } from "@/lib/types";
 import ConversationInfoPanel, {
@@ -76,11 +73,6 @@ function formatPrice(price: string) {
   return n.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 }
 
-function formatDate(date: Date | string) {
-  const d = typeof date === "string" ? new Date(date) : date;
-  if (Number.isNaN(d.getTime())) return String(date);
-  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
-}
 
 function statusColor(status: string) {
   switch (status?.toLowerCase()) {

@@ -36,8 +36,6 @@ interface ConversationInfoPanelProps {
   media: ConversationFile[];
   documents: ConversationFile[];
   links: ConversationLink[];
-  notificationsEnabled?: boolean;
-  onToggleNotifications?: (enabled: boolean) => void;
   onAddMember?: () => void;
 }
 
@@ -66,18 +64,11 @@ export default function ConversationInfoPanel({
   media,
   documents,
   links,
-  notificationsEnabled = true,
-  onToggleNotifications,
   onAddMember,
 }: ConversationInfoPanelProps) {
-  const [notifOn, setNotifOn] = useState(notificationsEnabled);
+ 
   const [tab, setTab] = useState<Tab>("Media");
 
-  function handleToggle() {
-    const next = !notifOn;
-    setNotifOn(next);
-    onToggleNotifications?.(next);
-  }
 
   const visibleMedia = media.slice(0, 5);
   const remainingCount = media.length - visibleMedia.length;
@@ -89,14 +80,14 @@ export default function ConversationInfoPanel({
 
       {/* Files / Links stat cards */}
       <div className="grid grid-cols-2 gap-3 px-4">
-        <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-3.5">
+        <div className="rounded-2xl border border-white/5 bg-white/3 p-3.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/15">
             <Folder className="h-4.5 w-4.5 text-amber-400" strokeWidth={1.75} />
           </div>
           <div className="mt-3 text-sm font-semibold text-white">Files</div>
           <div className="text-xs text-neutral-500">{documents.length}</div>
         </div>
-        <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-3.5">
+        <div className="rounded-2xl border border-white/5 bg-white/3 p-3.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/15">
             <Link2 className="h-4.5 w-4.5 text-blue-400" strokeWidth={1.75} />
           </div>
@@ -166,7 +157,7 @@ export default function ConversationInfoPanel({
                 href={doc.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2.5 text-xs text-neutral-200 transition hover:bg-white/[0.06]"
+                className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/3 px-3 py-2.5 text-xs text-neutral-200 transition hover:bg-white/6"
               >
                 <FileText className="h-4 w-4 shrink-0 text-neutral-500" strokeWidth={1.75} />
                 <span className="truncate">{doc.name ?? doc.url}</span>
@@ -189,8 +180,9 @@ export default function ConversationInfoPanel({
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2.5 text-xs text-neutral-200 transition hover:bg-white/[0.06]"
+                className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/3 px-3 py-2.5 text-xs text-neutral-200 transition hover:bg-white/6"
               >
+                
                 <Link2 className="h-4 w-4 shrink-0 text-neutral-500" strokeWidth={1.75} />
                 <span className="truncate">{link.title ?? link.url}</span>
               </a>
