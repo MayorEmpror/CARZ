@@ -3,6 +3,7 @@ import CarModelViewer from "@/components/CarModelViewer/CarModelViewer";
 import { Gauge, ArrowUpRight, Fuel, Star } from "lucide-react";
 import { Link } from "next-transition-router";
 import ContactOwnerButton from "../Components/Contactownerbutton";
+import CarNav from "./Carnav"
 // ---------- helpers ----------
 
 function computeScore(car: {
@@ -130,7 +131,8 @@ export default async function CarDetails({
             <p className="text-neutral-500 text-[10px] leading-none mt-0.5">Prime Cars Collection</p>
           </div>
         </div>
-        <nav className="flex items-center gap-2">
+        <CarNav id={id} />
+        {/*<nav className="flex items-center gap-2">
           {["Models", "Services", "Shop", "Purchase"].map((item, i) => (
             <button
               key={item}
@@ -143,10 +145,9 @@ export default async function CarDetails({
               {item}
             </button>
           ))}
-          {/* Was a static "Contact" button — now creates/resumes a
-              chat with this car's owner and routes to it. */}
+        
           <ContactOwnerButton carId={Number(id)} className={navButtonClass} />
-        </nav>
+        </nav>*/}
       </div>
 
      

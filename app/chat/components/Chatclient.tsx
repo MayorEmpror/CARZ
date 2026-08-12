@@ -3,9 +3,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { connectSocket, getSocket } from "@/lib/socket";
 import type { Socket } from "socket.io-client";
-import {
+import { 
   MessageCircle,
- 
   Calendar,
   Star,
   CarFront,
@@ -39,7 +38,7 @@ interface CurrentUser {
 interface ChatClientProps {
   conversationId: number;
   currentUser: CurrentUser;
-  car: Car;
+  car: Car[];
   members?: ConversationMember[];
   media?: ConversationFile[];
   documents?: ConversationFile[];
