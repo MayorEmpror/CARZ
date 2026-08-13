@@ -81,7 +81,7 @@ function FitBounds({ points }: { points: LatLng[] }) {
   useEffect(() => {
     if (didFit.current || !points.length) return;
     const bounds = L.latLngBounds(points.map((p) => [p.lat, p.lng] as [number, number]));
-    map.fitBounds(bounds, { padding: [48, 48] });
+    map.fitBounds(bounds, { padding: [56, 56] });
     didFit.current = true;
   }, [map, points]);
 

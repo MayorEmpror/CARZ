@@ -28,6 +28,7 @@
     "leaflet": "^1.9.4",
     "leva": "^0.10.1",
     "lucide-react": "^1.22.0",
+    "maplibre-gl": "^6.3.0",
     "modern-screenshot": "^4.7.0",
     "motion": "^12.42.2",
     "multer": "^2.2.0",
