@@ -276,6 +276,34 @@ npm start
 
 ---
 
+# Carz Rental Service Pipeline
+
+Yes. At this point, **don’t build more UI first**. we already have the beginning of the customer flow:**Showroom → Select Car → Services → Route (From/To) → Rental details**Now we need to turn that into an actual **rental transaction pipeline**.The key idea is: **the route page should calculate the rental, but the backend should be the authority that creates and validates the rental.**
+
+[![CARZ data model](https://app.eraser.io/workspace/oeNsvpy7zskBQXdh0JNN/preview?diagram=2PVLJKlwPJSIJfYh3fOO&type=embed)](https://app.eraser.io/workspace/oeNsvpy7zskBQXdh0JNN?diagram=2PVLJKlwPJSIJfYh3fOO)
+
+Starting by updating the car rentals table, the following is the race condition upon the route : 
+
+what if we do  
+
+"rent" even -> pending
+
+ "pay " even -> rented 
+
+and available by default, that would work but the thing is, that what if there were many people that rented it at the same time who would get it in the end, and if i set it such that if the status is pending, then others cant select the vehicle to solve this,then i would risk losing other clients if the current one decides he wants to go with a different car?
+
+to which I found the following solution :
+
+[![CARZ – Car Rental Hold & Confirmation](https://app.eraser.io/workspace/oeNsvpy7zskBQXdh0JNN/preview?diagram=XkhDEr8yq-zW1O9-Y8Yt&type=embed)](https://app.eraser.io/workspace/oeNsvpy7zskBQXdh0JNN?diagram=XkhDEr8yq-zW1O9-Y8Yt)
+
+Flow Becomes this :
+
+[![Car Rental Hold and Confirmation Process](https://app.eraser.io/workspace/oeNsvpy7zskBQXdh0JNN/preview?diagram=5e1Iq7We4LJ32AIpK3f0&type=embed)](https://app.eraser.io/workspace/oeNsvpy7zskBQXdh0JNN?diagram=5e1Iq7We4LJ32AIpK3f0)
+
+
+
+
+
 # 🔮 Future Improvements
 
 - Online payment gateway integration
