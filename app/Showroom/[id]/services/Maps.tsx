@@ -5,27 +5,8 @@ import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-/**
- * ─────────────────────────────────────────────────────────────────────────
- * SETUP (no API key, no billing card required)
- * ─────────────────────────────────────────────────────────────────────────
- * 1. npm install leaflet react-leaflet
- *    npm install -D @types/leaflet
- * 2. This file is imported with next/dynamic + ssr:false from services.tsx
- *    (Leaflet touches `window`, so it can't run during server rendering.)
- *
- * Tiles: CARTO dark basemap (free, no key)   — https://carto.com/basemaps
- * Search: OpenStreetMap Nominatim geocoder (free, no key)
- *   https://nominatim.org/release-docs/latest/api/Search/
- *   NOTE: Nominatim's public endpoint has a soft rate limit (~1 req/sec) and
- *   asks that you set a descriptive app name / referer. Fine for dev and
- *   light traffic; for production-scale search volume, self-host Nominatim
- *   or switch to a keyed provider (Mapbox, Google Places, etc.).
- * ─────────────────────────────────────────────────────────────────────────
- */
-
 const ACCENT = '#8C7CFF';
-const MIN_ZOOM = 3; // prevents zooming out past ~world view
+const MIN_ZOOM = 3;
 const WORLD_BOUNDS = L.latLngBounds([-85, -180], [85, 180]);
 
 export interface LatLng {
@@ -45,9 +26,16 @@ export interface TripRoute {
   finish: RoutePoint;
 }
 
+export interface SearchPoint {
+  point: LatLng;
+  label: string;
+}
+
 interface TripMapProps {
   route: TripRoute;
   fuelStops?: LatLng[];
+  searchPoint?: SearchPoint | null;
+  onMapReady?: (map: L.Map) => void;
 }
 
 interface GeocodeResult {
@@ -57,7 +45,6 @@ interface GeocodeResult {
   lon: string;
 }
 
-// Build a small colored SVG marker as a data URI — no external icon assets.
 function svgIcon(svg: string, size: [number, number]): L.Icon {
   return L.icon({
     iconUrl: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
@@ -86,13 +73,11 @@ const fuelIcon = svgIcon(
   [24, 24]
 );
 
-// Pin used to highlight a searched location, like the red Google Maps pin.
 const searchPinIcon = svgIcon(
   `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="42" viewBox="0 0 30 42"><path d="M15 0C6.7 0 0 6.7 0 15c0 10.5 15 27 15 27s15-16.5 15-27C30 6.7 23.3 0 15 0z" fill="#EB5C7A" stroke="#151622" stroke-width="1.5"/><circle cx="15" cy="15" r="6" fill="white"/></svg>`,
   [30, 42]
 );
 
-// Fits the map view to the route bounds once, on load.
 function FitBounds({ points }: { points: LatLng[] }) {
   const map = useMap();
   const didFit = useRef(false);
@@ -107,22 +92,27 @@ function FitBounds({ points }: { points: LatLng[] }) {
   return null;
 }
 
-// Captures the Leaflet map instance so the search bar (rendered outside
-// MapContainer) can call flyTo on it.
-function MapInstanceGrabber({ onReady }: { onReady: (map: L.Map) => void }) {
+// Hands the Leaflet map instance up to whoever rendered <TripMap onMapReady={...} />
+function MapInstanceGrabber({ onReady }: { onReady?: (map: L.Map) => void }) {
   const map = useMap();
   useEffect(() => {
-    onReady(map);
+    onReady?.(map);
   }, [map, onReady]);
   return null;
 }
 
+// ---------------------------------------------------------------------------
+// SearchBar — exported so it can be rendered wherever it fits in your layout
+// (e.g. inside a dashboard's glass top bar) instead of floating over the map.
+// Give the map instance via the `map` prop; call flyTo + fills its own input.
+// ---------------------------------------------------------------------------
 interface SearchBarProps {
   map: L.Map | null;
   onSelect: (point: LatLng, label: string) => void;
+  placeholder?: string;
 }
 
-function SearchBar({ map, onSelect }: SearchBarProps) {
+export function SearchBar({ map, onSelect, placeholder = 'Search for a location' }: SearchBarProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<GeocodeResult[]>([]);
   const [open, setOpen] = useState(false);
@@ -130,7 +120,6 @@ function SearchBar({ map, onSelect }: SearchBarProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Debounced geocoding search against Nominatim.
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
@@ -144,9 +133,7 @@ function SearchBar({ map, onSelect }: SearchBarProps) {
     debounceRef.current = setTimeout(async () => {
       try {
         const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-            query
-          )}&limit=5`,
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`,
           { headers: { Accept: 'application/json' } }
         );
         const data: GeocodeResult[] = await res.json();
@@ -165,7 +152,6 @@ function SearchBar({ map, onSelect }: SearchBarProps) {
     };
   }, [query]);
 
-  // Close dropdown on outside click.
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -191,30 +177,18 @@ function SearchBar({ map, onSelect }: SearchBarProps) {
   );
 
   return (
-    <div
-      ref={containerRef}
-      style={{
-        position: 'absolute',
-        top: 12,
-        left: 12,
-        zIndex: 1000,
-        width: 320,
-        maxWidth: 'calc(100% - 24px)',
-        fontFamily: 'inherit',
-      }}
-    >
+    <div ref={containerRef} style={{ position: 'relative', width: '100%' }}>
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
-          background: '#151622',
+          background: 'rgba(255,255,255,0.06)',
           border: `1px solid ${open && results.length ? ACCENT : 'rgba(255,255,255,0.12)'}`,
-          borderRadius: open && results.length ? '10px 10px 0 0' : 10,
-          boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
-          padding: '10px 12px',
+          borderRadius: 10,
+          padding: '8px 12px',
         }}
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginRight: 8 }}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginRight: 8 }}>
           <circle cx="11" cy="11" r="7" stroke="rgba(255,255,255,0.5)" strokeWidth="2" />
           <path d="M21 21l-4.35-4.35" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round" />
         </svg>
@@ -222,15 +196,8 @@ function SearchBar({ map, onSelect }: SearchBarProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => results.length && setOpen(true)}
-          placeholder="Search for a location"
-          style={{
-            flex: 1,
-            background: 'transparent',
-            border: 'none',
-            outline: 'none',
-            color: 'white',
-            fontSize: 14,
-          }}
+          placeholder={placeholder}
+          style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'white', fontSize: 13.5 }}
         />
         {query && (
           <button
@@ -239,15 +206,7 @@ function SearchBar({ map, onSelect }: SearchBarProps) {
               setResults([]);
               setOpen(false);
             }}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'rgba(255,255,255,0.5)',
-              cursor: 'pointer',
-              fontSize: 14,
-              padding: 0,
-              marginLeft: 6,
-            }}
+            style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: 13, padding: 0, marginLeft: 6 }}
             aria-label="Clear search"
           >
             ✕
@@ -258,32 +217,28 @@ function SearchBar({ map, onSelect }: SearchBarProps) {
       {open && (loading || results.length > 0) && (
         <div
           style={{
+            position: 'absolute',
+            top: 'calc(100% + 6px)',
+            left: 0,
+            right: 0,
             background: '#1b1c29',
             border: `1px solid ${ACCENT}`,
-            borderTop: 'none',
-            borderRadius: '0 0 10px 10px',
+            borderRadius: 10,
             boxShadow: '0 8px 20px rgba(0,0,0,0.4)',
             maxHeight: 260,
             overflowY: 'auto',
+            zIndex: 50,
           }}
         >
           {loading && (
-            <div style={{ padding: '10px 12px', fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>
-              Searching…
-            </div>
+            <div style={{ padding: '10px 12px', fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>Searching…</div>
           )}
           {!loading &&
             results.map((r) => (
               <div
                 key={r.place_id}
                 onClick={() => handleSelect(r)}
-                style={{
-                  padding: '10px 12px',
-                  fontSize: 13,
-                  color: 'white',
-                  cursor: 'pointer',
-                  borderBottom: '1px solid rgba(255,255,255,0.06)',
-                }}
+                style={{ padding: '10px 12px', fontSize: 13, color: 'white', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(140,124,255,0.15)')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
               >
@@ -296,65 +251,46 @@ function SearchBar({ map, onSelect }: SearchBarProps) {
   );
 }
 
-export default function TripMap({ route, fuelStops = [] }: TripMapProps) {
+export default function TripMap({ route, fuelStops = [], searchPoint = null, onMapReady }: TripMapProps) {
   const routePoints: LatLng[] = [route.start, route.stop, route.finish];
   const polylinePath: [number, number][] = routePoints.map((p) => [p.lat, p.lng]);
   const center: [number, number] = [route.stop.lat, route.stop.lng];
 
-  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
-  const [searchPoint, setSearchPoint] = useState<{ point: LatLng; label: string } | null>(null);
-
-  const handleSelect = useCallback((point: LatLng, label: string) => {
-    setSearchPoint({ point, label });
-  }, []);
-
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      <MapContainer
-        center={center}
-        zoom={15}
-        minZoom={MIN_ZOOM}
-        maxBounds={WORLD_BOUNDS}
-        maxBoundsViscosity={1.0}
-        worldCopyJump={false}
-        style={{ width: '100%', height: '100%', background: '#151622' }}
-        zoomControl={true}
-        attributionControl={true}
-      >
-        {/* Free dark basemap tiles from CARTO — no API key required */}
-        <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-          subdomains="abcd"
-          maxZoom={20}
-          noWrap={true}
-        />
+    <MapContainer
+      center={center}
+      zoom={15}
+      minZoom={MIN_ZOOM}
+      maxBounds={WORLD_BOUNDS}
+      maxBoundsViscosity={1.0}
+      worldCopyJump={false}
+       keyboard={false}          
+      style={{ width: '100%', height: '100%', background: '#151622', top:"160px", left:"10px"}}
+      zoomControl={true}
+      attributionControl={true}
+    >
+      <TileLayer
+        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        subdomains="abcd"
+        maxZoom={20}
+        noWrap={true}
+      />
 
-        <FitBounds points={routePoints} />
-        <MapInstanceGrabber onReady={setMapInstance} />
+      <FitBounds points={routePoints} />
+      <MapInstanceGrabber onReady={onMapReady} />
 
-        <Polyline
-          positions={polylinePath}
-          pathOptions={{ color: ACCENT, weight: 3, opacity: 0.9 }}
-        />
+      <Polyline positions={polylinePath} pathOptions={{ color: ACCENT, weight: 3, opacity: 0.9 }} />
 
-        <Marker position={[route.start.lat, route.start.lng]} icon={dotIcon} />
-        <Marker position={[route.stop.lat, route.stop.lng]} icon={ringIcon} />
-        <Marker position={[route.finish.lat, route.finish.lng]} icon={squareIcon} />
+      <Marker position={[route.start.lat, route.start.lng]} icon={dotIcon} />
+      <Marker position={[route.stop.lat, route.stop.lng]} icon={ringIcon} />
+      <Marker position={[route.finish.lat, route.finish.lng]} icon={squareIcon} />
 
-        {fuelStops.map((stop, i) => (
-          <Marker key={i} position={[stop.lat, stop.lng]} icon={fuelIcon} />
-        ))}
+      {fuelStops.map((stop, i) => (
+        <Marker key={i} position={[stop.lat, stop.lng]} icon={fuelIcon} />
+      ))}
 
-        {searchPoint && (
-          <Marker
-            position={[searchPoint.point.lat, searchPoint.point.lng]}
-            icon={searchPinIcon}
-          />
-        )}
-      </MapContainer>
-
-      <SearchBar map={mapInstance} onSelect={handleSelect} />
-    </div>
+      {searchPoint && <Marker position={[searchPoint.point.lat, searchPoint.point.lng]} icon={searchPinIcon} />}
+    </MapContainer>
   );
 }

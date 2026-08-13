@@ -2,7 +2,8 @@
 
 import { useMemo, useState, type ComponentType } from 'react';
 import dynamic from 'next/dynamic';
-import type { LatLng, TripRoute } from './Maps';
+import type { Map as LeafletMap } from 'leaflet';
+import type { LatLng, TripRoute, SearchPoint } from './Maps';
 
 /**
  * ─────────────────────────────────────────────────────────────────────────
@@ -23,6 +24,8 @@ const TripMap = dynamic(() => import('./Maps'), {
   ssr: false,
   loading: () => <MapFallback text="Loading map…" />,
 });
+// Same module as TripMap (it imports leaflet), so it also needs ssr:false.
+const MapSearchBar = dynamic(() => import('./Maps').then((mod) => mod.SearchBar), { ssr: false });
 const AmbientBackground3D = dynamic(() => import('./Ambientbackground3d'), { ssr: false });
 
 // ---------------------------------------------------------------------------
@@ -114,6 +117,12 @@ export default function Services() {
   const [query, setQuery] = useState<string>('');
   const [topCollapsed, setTopCollapsed] = useState(false);
   const [timelineCollapsed, setTimelineCollapsed] = useState(false);
+
+  // Leaflet map instance (handed up from TripMap via onMapReady) and the
+  // pin dropped by the location search, both live here so the search bar
+  // in the top bar and the map underneath can talk to each other.
+  const [mapInstance, setMapInstance] = useState<LeafletMap | null>(null);
+  const [searchPoint, setSearchPoint] = useState<SearchPoint | null>(null);
 
   const filteredTrips = useMemo(
     () => TRIPS.filter((t) => t.name.toLowerCase().includes(query.toLowerCase()) || t.id.includes(query)),
@@ -215,7 +224,12 @@ export default function Services() {
           <section className="relative h-full min-h-0 overflow-hidden bg-black">
             {/* Map fills the entire main area, edge to edge, behind everything else */}
             <div className="absolute inset-0 z-0">
-              <TripMap route={TRIP_DETAIL.route} fuelStops={TRIP_DETAIL.fuelStops} />
+              <TripMap
+                route={TRIP_DETAIL.route}
+                fuelStops={TRIP_DETAIL.fuelStops}
+                searchPoint={searchPoint}
+                onMapReady={setMapInstance}
+              />
             </div>
 
             {/*
@@ -230,7 +244,7 @@ export default function Services() {
               needs to sit above all of that, on every browser.
             */}
             <div className="pointer-events-none absolute inset-4 z-[1200] flex flex-col gap-4">
-              {/* ── Top bar: header + stats, collapsible, glass blur ── */}
+              {/* ── Top bar: header + location search + stats, collapsible, glass blur ── */}
               <div className="pointer-events-auto shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl">
                 <div className="flex items-center gap-3.5 px-6 py-4">
                   <h2 className="text-[22px] font-bold tracking-tight text-[#F5F5F5]">#{TRIP_DETAIL.id}</h2>
@@ -238,6 +252,16 @@ export default function Services() {
                     {TRIP_DETAIL.date}
                   </span>
                   <StatusPill status={TRIP_DETAIL.status} />
+
+                  {/* Location search — flies the map to whatever's picked and drops a pin */}
+                  <div className="ml-4 hidden w-64 md:block lg:w-72">
+                    <MapSearchBar
+                      map={mapInstance}
+                      onSelect={(point, label) => setSearchPoint({ point, label })}
+                      placeholder="Search a location…"
+                    />
+                  </div>
+
                   <div className="ml-auto flex items-center gap-1">
                     <DotsIcon className="fill-[#A3A3A3]" />
                     <button
@@ -249,6 +273,15 @@ export default function Services() {
                       <ChevronDownIcon className={`transition-transform ${topCollapsed ? '-rotate-180' : ''}`} />
                     </button>
                   </div>
+                </div>
+
+                {/* Search bar shown as its own row on small screens, where it's hidden above */}
+                <div className="px-6 pb-4 md:hidden">
+                  <MapSearchBar
+                    map={mapInstance}
+                    onSelect={(point, label) => setSearchPoint({ point, label })}
+                    placeholder="Search a location…"
+                  />
                 </div>
 
                 <div
