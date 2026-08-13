@@ -8,6 +8,33 @@ The platform combines modern frontend technologies, backend APIs, database archi
 
 ---
 
+## 📑 Table of Contents
+
+- [🚀 Features](#-features)
+  - [Customer Features](#customer-features)
+  - [Owner Features](#owner-features)
+  - [Driver Features](#driver-features)
+  - [Platform Features](#platform-features)
+- [🛠️ Tech Stack](#️-tech-stack)
+  - [Frontend](#frontend)
+  - [Backend](#backend)
+  - [Database](#database)
+  - [Other Tools](#other-tools)
+- [📐 ER Diagram](#-er-diagram)
+- [🖼️ Application Showcase](#️-application-showcase)
+  - [Landing Page](#landing-page)
+  - [Owner Management Dashboard](#owner-management-dashboard)
+- [🔄 Development Workflow](#-development-workflow)
+- [📂 Project Structure](#-project-structure)
+- [⚙️ Getting Started](#️-getting-started)
+  - [Environment Variables](#environment-variables)
+- [▶️ Running the Application](#️-running-the-application)
+- [🐳 Running PostgreSQL with Docker](#-running-postgresql-with-docker)
+- [📦 Deployment](#-deployment)
+- [Carz Rental Service Pipeline](#carz-rental-service-pipeline)
+- [🔮 Future Improvements](#-future-improvements)
+- [👨‍💻 Author](#-author)
+
 ## 🚀 Features
 
 ### Customer Features
