@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo, useState, type ComponentType } from 'react';
+import { useEffect, useMemo, useState, type ComponentType } from 'react';
 import dynamic from 'next/dynamic';
 import type { Map as LeafletMap } from 'leaflet';
-import type { LatLng, TripRoute, SearchPoint } from './Maps';
+import type { LatLng, TripRoute, SearchPoint, RouteInfo } from './Maps';
 
 /**
  * ─────────────────────────────────────────────────────────────────────────
@@ -32,6 +32,7 @@ const AmbientBackground3D = dynamic(() => import('./Ambientbackground3d'), { ssr
 // Types
 // ---------------------------------------------------------------------------
 type TripStatus = 'Active' | 'Completed';
+type Availability = 'Available' | 'Booked' | 'Unavailable';
 
 interface Trip {
   id: string;
@@ -112,22 +113,58 @@ const SIDEBAR_ICONS: SidebarIconDef[] = [
   { key: 'billing', icon: CardIcon },
 ];
 
+// Rough per-km rate used to suggest a rent figure once a route is calculated.
+// Purely a starting-point default — the field stays freely editable.
+const RATE_PER_KM = 1.35;
+
 export default function Services() {
   const [selectedTripId, setSelectedTripId] = useState<string>(TRIP_DETAIL.id);
   const [query, setQuery] = useState<string>('');
   const [topCollapsed, setTopCollapsed] = useState(false);
   const [timelineCollapsed, setTimelineCollapsed] = useState(false);
 
-  // Leaflet map instance (handed up from TripMap via onMapReady) and the
-  // pin dropped by the location search, both live here so the search bar
-  // in the top bar and the map underneath can talk to each other.
+  // Leaflet map instance (handed up from TripMap via onMapReady).
   const [mapInstance, setMapInstance] = useState<LeafletMap | null>(null);
-  const [searchPoint, setSearchPoint] = useState<SearchPoint | null>(null);
+
+  // Route search: From / To, plus the calculated route once both are set.
+  const [fromPoint, setFromPoint] = useState<SearchPoint | null>(null);
+  const [toPoint, setToPoint] = useState<SearchPoint | null>(null);
+  const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
+  const [routeLoading, setRouteLoading] = useState(false);
+
+  // Route-planning fields shown in the timeline panel. Time & rent
+  // auto-populate from the calculated route but stay editable — once the
+  // person edits them by hand we stop overwriting on every recalculation.
+  const [timeCalculation, setTimeCalculation] = useState('');
+  const [timeTouched, setTimeTouched] = useState(false);
+  const [rent, setRent] = useState('');
+  const [rentTouched, setRentTouched] = useState(false);
+  const [availability, setAvailability] = useState<Availability>('Available');
+
+  useEffect(() => {
+    if (!routeInfo) return;
+
+    const km = routeInfo.distanceKm;
+    const mins = Math.round(routeInfo.durationMin);
+    const hrs = Math.floor(mins / 60);
+    const remMins = mins % 60;
+    const timeLabel = hrs > 0 ? `${hrs}h ${remMins}m · ${km.toFixed(1)} km` : `${remMins}m · ${km.toFixed(1)} km`;
+
+    if (!timeTouched) setTimeCalculation(timeLabel);
+    if (!rentTouched) setRent((km * RATE_PER_KM).toFixed(2));
+  }, [routeInfo, timeTouched, rentTouched]);
 
   const filteredTrips = useMemo(
     () => TRIPS.filter((t) => t.name.toLowerCase().includes(query.toLowerCase()) || t.id.includes(query)),
     [query]
   );
+
+  const handleSwap = () => {
+    const nextFrom = toPoint;
+    const nextTo = fromPoint;
+    setFromPoint(nextFrom);
+    setToPoint(nextTo);
+  };
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-black">
@@ -227,7 +264,10 @@ export default function Services() {
               <TripMap
                 route={TRIP_DETAIL.route}
                 fuelStops={TRIP_DETAIL.fuelStops}
-                searchPoint={searchPoint}
+                fromPoint={fromPoint}
+                toPoint={toPoint}
+                onRouteInfo={setRouteInfo}
+                onRouteLoadingChange={setRouteLoading}
                 onMapReady={setMapInstance}
               />
             </div>
@@ -244,25 +284,19 @@ export default function Services() {
               needs to sit above all of that, on every browser.
             */}
             <div className="pointer-events-none absolute inset-4 z-[1200] flex flex-col gap-4">
-              {/* ── Top bar: header + location search + stats, collapsible, glass blur ── */}
+              {/* ── Top bar: header + route search + stats, collapsible, glass blur ── */}
               <div className="pointer-events-auto shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl">
-                <div className="flex items-center gap-3.5 px-6 py-4">
+                <div className="flex flex-wrap items-center gap-3.5 px-6 py-4">
                   <h2 className="text-[22px] font-bold tracking-tight text-[#F5F5F5]">#{TRIP_DETAIL.id}</h2>
                   <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[12.5px] text-[#A3A3A3]">
                     {TRIP_DETAIL.date}
                   </span>
                   <StatusPill status={TRIP_DETAIL.status} />
 
-                  {/* Location search — flies the map to whatever's picked and drops a pin */}
-                  <div className="ml-4 hidden w-64 md:block lg:w-72">
-                    <MapSearchBar
-                      map={mapInstance}
-                      onSelect={(point, label) => setSearchPoint({ point, label })}
-                      placeholder="Search a location…"
-                    />
-                  </div>
-
                   <div className="ml-auto flex items-center gap-1">
+                    {routeLoading && (
+                      <span className="mr-1 text-[11.5px] text-[#A3A3A3]">Calculating route…</span>
+                    )}
                     <DotsIcon className="fill-[#A3A3A3]" />
                     <button
                       type="button"
@@ -275,13 +309,36 @@ export default function Services() {
                   </div>
                 </div>
 
-                {/* Search bar shown as its own row on small screens, where it's hidden above */}
-                <div className="px-6 pb-4 md:hidden">
-                  <MapSearchBar
-                    map={mapInstance}
-                    onSelect={(point, label) => setSearchPoint({ point, label })}
-                    placeholder="Search a location…"
-                  />
+                {/* Route search — From / To, with a swap button between them */}
+                <div className="flex items-center gap-2 border-t border-white/10 px-6 py-3.5">
+                  <div className="min-w-0 flex-1">
+                    <MapSearchBar
+                      map={mapInstance}
+                      value={fromPoint?.label}
+                      onSelect={(point, label) => setFromPoint({ point, label })}
+                      onClear={() => setFromPoint(null)}
+                      placeholder="From…"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleSwap}
+                    aria-label="Swap from and to"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#A3A3A3] hover:bg-white/10"
+                  >
+                    <SwapIcon />
+                  </button>
+
+                  <div className="min-w-0 flex-1">
+                    <MapSearchBar
+                      map={mapInstance}
+                      value={toPoint?.label}
+                      onSelect={(point, label) => setToPoint({ point, label })}
+                      onClear={() => setToPoint(null)}
+                      placeholder="To…"
+                    />
+                  </div>
                 </div>
 
                 <div
@@ -308,7 +365,7 @@ export default function Services() {
               <div className="flex min-h-0 flex-1 justify-end">
                 <div
                   className={`pointer-events-auto flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl transition-[width] duration-300 ${
-                    timelineCollapsed ? 'w-14' : 'w-[300px]'
+                    timelineCollapsed ? 'w-14' : 'w-[320px]'
                   }`}
                 >
                   <div
@@ -331,6 +388,69 @@ export default function Services() {
 
                   {!timelineCollapsed && (
                     <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-4">
+                      {/* ── Route-planning inputs ── */}
+                      <div className="mb-5 flex flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                        <FieldLabel>From</FieldLabel>
+                        <input
+                          value={fromPoint?.label ?? ''}
+                          onChange={(e) => setFromPoint(e.target.value ? { point: fromPoint?.point ?? { lat: 0, lng: 0 }, label: e.target.value } : null)}
+                          placeholder="Search a starting point above"
+                          className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-[#F5F5F5] outline-none placeholder:text-[#6B6B6B] focus:border-[#8C7CFF]"
+                        />
+
+                        <FieldLabel>To</FieldLabel>
+                        <input
+                          value={toPoint?.label ?? ''}
+                          onChange={(e) => setToPoint(e.target.value ? { point: toPoint?.point ?? { lat: 0, lng: 0 }, label: e.target.value } : null)}
+                          placeholder="Search a destination above"
+                          className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-[#F5F5F5] outline-none placeholder:text-[#6B6B6B] focus:border-[#8C7CFF]"
+                        />
+
+                        <FieldLabel>Time calculation</FieldLabel>
+                        <input
+                          value={timeCalculation}
+                          onChange={(e) => {
+                            setTimeCalculation(e.target.value);
+                            setTimeTouched(true);
+                          }}
+                          placeholder={routeLoading ? 'Calculating…' : 'Auto-fills once route is found'}
+                          className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-[#F5F5F5] outline-none placeholder:text-[#6B6B6B] focus:border-[#8C7CFF]"
+                        />
+                        {routeInfo && routeInfo.alternativeCount > 0 && (
+                          <span className="-mt-2 text-[11px] text-[#8B8FA3]">
+                            +{routeInfo.alternativeCount} alternate route{routeInfo.alternativeCount > 1 ? 's' : ''} shown on map
+                          </span>
+                        )}
+
+                        <FieldLabel>Rent</FieldLabel>
+                        <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 focus-within:border-[#8C7CFF]">
+                          <span className="text-[13px] text-[#6B6B6B]">$</span>
+                          <input
+                            value={rent}
+                            onChange={(e) => {
+                              setRent(e.target.value);
+                              setRentTouched(true);
+                            }}
+                            placeholder="0.00"
+                            inputMode="decimal"
+                            className="flex-1 min-w-0 bg-transparent text-[13px] text-[#F5F5F5] outline-none placeholder:text-[#6B6B6B]"
+                          />
+                        </div>
+
+                        <FieldLabel>Availability</FieldLabel>
+                        <select
+                          value={availability}
+                          onChange={(e) => setAvailability(e.target.value as Availability)}
+                          className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-[#F5F5F5] outline-none focus:border-[#8C7CFF]"
+                        >
+                          <option value="Available">Available</option>
+                          <option value="Booked">Booked</option>
+                          <option value="Unavailable">Unavailable</option>
+                        </select>
+                      </div>
+
+                      <div className="mb-3 h-px bg-white/10" />
+
                       <TimelineItem
                         marker="dot"
                         label={TRIP_DETAIL.route.start.label}
@@ -380,6 +500,10 @@ function Stat({
       <div className={`truncate text-[15px] font-bold ${accentClassName ?? 'text-[#F5F5F5]'}`}>{value}</div>
     </div>
   );
+}
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return <span className="text-[11px] font-semibold uppercase tracking-wide text-[#6B6B6B]">{children}</span>;
 }
 
 function StatusPill({ status }: { status: TripStatus }) {
@@ -520,6 +644,13 @@ function ChevronRightIcon({ className }: IconProps) {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
       <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function SwapIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M7 4v13M7 17l-3-3M7 17l3-3M17 20V7M17 7l3 3M17 7l-3 3" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
