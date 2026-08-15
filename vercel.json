@@ -1,7 +1,7 @@
 {
   "crons": [
     {
-      "path": "/app/api/cron/expire-rentals",
+      "path": "/api/cron/expire-rentals",
       "schedule": "* * * * *"
     }
   ]

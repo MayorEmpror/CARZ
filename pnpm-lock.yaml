@@ -44,9 +44,6 @@ importers:
       d3:
         specifier: ^7.9.0
         version: 7.9.0
-      dotenv:
-        specifier: ^17.4.2
-        version: 17.4.2
       framer-motion:
         specifier: ^12.42.2
         version: 12.42.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -147,6 +144,12 @@ importers:
       '@types/three':
         specifier: ^0.185.1
         version: 0.185.1
+      concurrently:
+        specifier: ^10.0.5
+        version: 10.0.5
+      dotenv:
+        specifier: ^17.4.2
+        version: 17.4.2
       eslint:
         specifier: ^9
         version: 9.39.4(jiti@2.7.0)
@@ -1685,6 +1688,10 @@ packages:
     resolution: {integrity: sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA==}
     engines: {node: '>=10'}
 
+  chalk@5.6.2:
+    resolution: {integrity: sha512-7NzBL0rN6fMUW+f7A6Io4h40qQlG+xGmtMxfbnH/K7TAtt8JQWVQK+6g0UXKMeVJoyV5EkkNsErQ8pVD3bLHbA==}
+    engines: {node: ^12.17.0 || ^14.13 || >=16.0.0}
+
   chromium-bidi@16.0.1:
     resolution: {integrity: sha512-J63PGu/9PpeCwLIcKYyzWP6yaVL5pxuBc0shlYCYM8BaAkmlwiQboXO1iNbOgSDbVklEyYFfNEcHD8oOAWacUA==}
     engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0'}
@@ -1726,6 +1733,11 @@ packages:
   concat-stream@2.0.0:
     resolution: {integrity: sha512-MWufYdFw53ccGjCA+Ol7XJYpAlW6/prSMzuPOTRnJGcGzuhLn4Scrz7qf6o8bROZ514ltazcIFJZevcfbo0x7A==}
     engines: {'0': node >= 6.0}
+
+  concurrently@10.0.5:
+    resolution: {integrity: sha512-JaP/CoftUrCcAFW/g//RbgEGwlelnEae6cfBLgH6ZdO6s8jPkn6p9SB9u6pdVxYXoiSnFqseOlHfrEfF82TVOg==}
+    engines: {node: '>=22'}
+    hasBin: true
 
   convert-source-map@2.0.0:
     resolution: {integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==}
@@ -3172,6 +3184,9 @@ packages:
   rw@1.3.3:
     resolution: {integrity: sha512-PdhdWy89SiZogBLaw42zdeqtRJ//zFd2PgQavcICDUgJT5oW10QCRKbJ6bg4r0/UY2M6BWd5tkxuGFRvCkgfHQ==}
 
+  rxjs@7.8.2:
+    resolution: {integrity: sha512-dhKf903U/PQZY6boNNtAGdWbG85WAbjT/1xYoZIC7FAY0yWapOBQVsVrDl58W86//e1VpMNBtRV4MaXfdMySFA==}
+
   safe-array-concat@1.1.4:
     resolution: {integrity: sha512-wtZlHyOje6OZTGqAoaDKxFkgRtkF9CnHAVnCHKfuj200wAgL+bSJhdsCD2l0Qx/2ekEXjPWcyKkfGb5CPboslg==}
     engines: {node: '>=0.4'}
@@ -3229,6 +3244,10 @@ packages:
   shebang-regex@3.0.0:
     resolution: {integrity: sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==}
     engines: {node: '>=8'}
+
+  shell-quote@1.9.0:
+    resolution: {integrity: sha512-Iov+JwFv/2HcTpcwNMKd8+IWNb8tboQJNQTkAY/LLVK7gGH9jy+LGkVqPxfekHl+yMmiqXszdGWXgkfml7hjqA==}
+    engines: {node: '>= 0.4'}
 
   side-channel-list@1.0.1:
     resolution: {integrity: sha512-mjn/0bi/oUURjc5Xl7IaWi/OJJJumuoJFQJfDDyO46+hBWsfaVM65TBHq2eoZBhzl9EchxOijpkbRC8SVBQU0w==}
@@ -3351,6 +3370,10 @@ packages:
   supercluster@8.0.1:
     resolution: {integrity: sha512-IiOea5kJ9iqzD2t7QJq/cREyLHTtSmUT6gQsweojg9WH2sYJqZK9SswTu6jrscO6D1G5v5vYZ9ru/eq85lXeZQ==}
 
+  supports-color@10.2.2:
+    resolution: {integrity: sha512-SS+jx45GF1QjgEXQx4NJZV9ImqmO2NPz5FNsIHrsDjh2YsHnawpan7SNQ1o8NuhrbHZy9AZhIoCUiCeaW/C80g==}
+    engines: {node: '>=18'}
+
   supports-color@7.2.0:
     resolution: {integrity: sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw==}
     engines: {node: '>=8'}
@@ -3402,6 +3425,10 @@ packages:
   to-regex-range@5.0.1:
     resolution: {integrity: sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==}
     engines: {node: '>=8.0'}
+
+  tree-kill@1.2.2:
+    resolution: {integrity: sha512-L0Orpi8qGpRG//Nd+H90vFB+3iHnue1zSSGmNOOCh1GLJ7rUKVwV2HvijphGQS2UmhUZewS9VgvxYIdgr+fG1A==}
+    hasBin: true
 
   troika-three-text@0.52.4:
     resolution: {integrity: sha512-V50EwcYGruV5rUZ9F4aNsrytGdKcXKALjEtQXIOBfhVoZU9VAqZNIoGQ3TMiooVqFAbR1w15T+f+8gkzoFzawg==}
@@ -5091,6 +5118,8 @@ snapshots:
       ansi-styles: 4.3.0
       supports-color: 7.2.0
 
+  chalk@5.6.2: {}
+
   chromium-bidi@16.0.1(devtools-protocol@0.0.1638949):
     dependencies:
       devtools-protocol: 0.0.1638949
@@ -5129,6 +5158,15 @@ snapshots:
       inherits: 2.0.4
       readable-stream: 3.6.2
       typedarray: 0.0.6
+
+  concurrently@10.0.5:
+    dependencies:
+      chalk: 5.6.2
+      rxjs: 7.8.2
+      shell-quote: 1.9.0
+      supports-color: 10.2.2
+      tree-kill: 1.2.2
+      yargs: 18.0.0
 
   convert-source-map@2.0.0: {}
 
@@ -6760,6 +6798,10 @@ snapshots:
 
   rw@1.3.3: {}
 
+  rxjs@7.8.2:
+    dependencies:
+      tslib: 2.8.1
+
   safe-array-concat@1.1.4:
     dependencies:
       call-bind: 1.0.9
@@ -6855,6 +6897,8 @@ snapshots:
       shebang-regex: 3.0.0
 
   shebang-regex@3.0.0: {}
+
+  shell-quote@1.9.0: {}
 
   side-channel-list@1.0.1:
     dependencies:
@@ -7029,6 +7073,8 @@ snapshots:
     dependencies:
       kdbush: 4.1.0
 
+  supports-color@10.2.2: {}
+
   supports-color@7.2.0:
     dependencies:
       has-flag: 4.0.0
@@ -7075,6 +7121,8 @@ snapshots:
   to-regex-range@5.0.1:
     dependencies:
       is-number: 7.0.0
+
+  tree-kill@1.2.2: {}
 
   troika-three-text@0.52.4(three@0.185.1):
     dependencies:

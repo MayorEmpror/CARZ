@@ -12,17 +12,12 @@ export async function GET(
       `
       SELECT
         r.*,
-
         c.make,
         c.model,
-        c.year,
-        c.registration_number
-
+        c.year
       FROM rentals r
-
       JOIN cars c
         ON r.car_id = c.car_id
-
       WHERE r.rental_id = $1
       `,
       [id]

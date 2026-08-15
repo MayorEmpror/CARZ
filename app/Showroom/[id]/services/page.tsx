@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState, type ComponentType } from 'react';
 import dynamic from 'next/dynamic';
 import type { Map as LeafletMap } from 'leaflet';
 import type { LatLng, TripRoute, SearchPoint, RouteInfo } from './Maps';
+import { createRental, getRental } from '@/lib/api/rentals'; // TODO: adjust to your real import path
+import type { CreateRentalData } from '@/lib/types';
 
 /**
  * ─────────────────────────────────────────────────────────────────────────
@@ -16,6 +18,29 @@ import type { LatLng, TripRoute, SearchPoint, RouteInfo } from './Maps';
  *    (same folder).
  * 4. Tailwind CSS must be configured in the project (tailwind.config +
  *    globals.css with @tailwind directives).
+ * ─────────────────────────────────────────────────────────────────────────
+ * DATA NOTES (read before wiring this into your real app)
+ * ─────────────────────────────────────────────────────────────────────────
+ * - There is no "list rentals" endpoint yet, only POST /api/rentals and
+ *   GET /api/rentals/:id. So the left-hand Trips list below is still
+ *   SAMPLE data (see SAMPLE_TRIPS) — clicking an item calls the real
+ *   getRental(id) using that sample id as the rental_id. Swap SAMPLE_TRIPS
+ *   for a real list once you have an endpoint for it.
+ * - GET /api/rentals/:id returns the raw `rentals` row joined with
+ *   make/model/year/registration_number from `cars`. It does NOT include
+ *   customer name/avatar, car rating/mileage/gearbox, a mid-trip stop,
+ *   max speed, fuel consumption, passenger count, or road condition — so
+ *   those fields from the original mock UI have been removed rather than
+ *   faked. Only real columns are rendered.
+ * - Maps.tsx's TripRoute type (from your existing code) expects a
+ *   start/stop/finish triple. Since the API only gives pickup/dropoff, the
+ *   "stop" passed to the map is a computed midpoint used purely so the
+ *   polyline draws sensibly — it is NOT shown in the on-screen timeline,
+ *   which only lists the two real points (pickup + dropoff).
+ * - POST /api/rentals requires customer_id and car_id, which this page has
+ *   no picker for (no customer/car search endpoints were provided), so
+ *   they're plain number inputs in the "Create new rental" form. Swap for
+ *   real pickers once those endpoints exist.
  * ─────────────────────────────────────────────────────────────────────────
  */
 
@@ -31,35 +56,43 @@ const AmbientBackground3D = dynamic(() => import('./Ambientbackground3d'), { ssr
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-type TripStatus = 'Active' | 'Completed';
-type Availability = 'Available' | 'Booked' | 'Unavailable';
 
-interface Trip {
+// Raw shape returned by GET /api/rentals/:id (rentals row + car join).
+// Adjust field names here if your `rentals` table differs slightly.
+interface RentalRecord {
+  rental_id: number;
+  customer_id: number;
+  car_id: number;
+  start_time: string;
+  end_time: string;
+  pickup_location: string;
+  pickup_latitude: number;
+  pickup_longitude: number;
+  dropoff_location: string;
+  dropoff_latitude: number;
+  dropoff_longitude: number;
+  distance_km: number | null;
+  estimated_duration: number | null;
+  base_price: number | null;
+  distance_charge: number | null;
+  service_fee: number | null;
+  total_amount: number | null;
+  status: string;
+  hold_expires_at: string | null;
+  make: string;
+  model: string;
+  year: number;
+  registration_number: string;
+}
+
+// Sample-only placeholder for the left list until a "list rentals" endpoint exists.
+interface SampleTripSummary {
   id: string;
   name: string;
   date: string;
-  status: TripStatus;
+  status: string;
   earned: number;
   avatar: string;
-}
-
-interface TripDetail {
-  id: string;
-  date: string;
-  status: TripStatus;
-  customer: { name: string; dob: string; avatar: string };
-  car: { name: string; rating: number; mileage: string; gearbox: string };
-  payment: { rent: number; fines: number; deposit: string; bank: string; last4: string };
-  stats: {
-    distance: string;
-    time: string;
-    maxSpeed: string;
-    fuel: string;
-    passengers: number;
-    road: string;
-  };
-  route: TripRoute;
-  fuelStops: LatLng[];
 }
 
 interface IconProps {
@@ -74,35 +107,16 @@ interface SidebarIconDef {
 }
 
 // ---------------------------------------------------------------------------
-// Sample data — swap for real API data
+// Sample list data — replace once a list endpoint is available. Ids are
+// plain small integers so they plausibly match real serial rental_ids.
 // ---------------------------------------------------------------------------
-const TRIPS: Trip[] = [
-  { id: '1030', name: 'Henry Cummings', date: 'Monday, 15 June 2020', status: 'Active', earned: 26.44, avatar: 'https://i.pravatar.cc/80?img=13' },
-  { id: '1029', name: 'Susan Parker', date: 'Monday, 15 June 2020', status: 'Active', earned: 84.72, avatar: 'https://i.pravatar.cc/80?img=32' },
-  { id: '1028', name: 'Magnussen Peterson', date: 'Monday, 15 June 2020', status: 'Completed', earned: 124.68, avatar: 'https://i.pravatar.cc/80?img=51' },
-  { id: '1026', name: 'Nora Salazar', date: 'Sunday, 15 June 2020', status: 'Completed', earned: 12.80, avatar: 'https://i.pravatar.cc/80?img=47' },
-  { id: '1025', name: 'Owen Brooks', date: 'Sunday, 15 June 2020', status: 'Completed', earned: 58.10, avatar: 'https://i.pravatar.cc/80?img=15' },
+const SAMPLE_TRIPS: SampleTripSummary[] = [
+  { id: '5', name: 'Rental #5', date: '—', status: 'active', earned: 26.44, avatar: 'https://i.pravatar.cc/80?img=13' },
+  { id: '4', name: 'Rental #4', date: '—', status: 'confirmed', earned: 84.72, avatar: 'https://i.pravatar.cc/80?img=32' },
+  { id: '3', name: 'Rental #3', date: '—', status: 'completed', earned: 124.68, avatar: 'https://i.pravatar.cc/80?img=51' },
+  { id: '2', name: 'Rental #2', date: '—', status: 'completed', earned: 12.80, avatar: 'https://i.pravatar.cc/80?img=47' },
+  { id: '1', name: 'Rental #1', date: '—', status: 'cancelled', earned: 58.10, avatar: 'https://i.pravatar.cc/80?img=15' },
 ];
-
-const TRIP_DETAIL: TripDetail = {
-  id: '1028',
-  date: 'Monday, 15 June 2020',
-  status: 'Completed',
-  customer: { name: 'Magnussen Peterson', dob: '09/08/1995', avatar: 'https://i.pravatar.cc/160?img=51' },
-  car: { name: 'Toyota Rav-4 2018', rating: 5, mileage: '56,245 km', gearbox: 'Auto' },
-  payment: { rent: 124.68, fines: 0, deposit: 'Returned', bank: 'United Bank', last4: '3456' },
-  stats: { distance: '42 km', time: '1h 10m', maxSpeed: '64 km/h', fuel: '12 liters', passengers: 4, road: 'Good' },
-  route: {
-    start: { label: 'Start point', time: '10:32 AM', address: 'Jones Street 24, Manhattan', lat: 40.7326, lng: -74.0028 },
-    stop: { label: 'Stop point', time: '11:28 AM', address: 'Christopher Street 46, Manhattan', lat: 40.7317, lng: -74.0031 },
-    finish: { label: 'Finish point', time: '12:40 PM', address: 'Grove Court 32, Manhattan', lat: 40.7335, lng: -74.0071 },
-  },
-  fuelStops: [
-    { lat: 40.7333, lng: -74.0072 },
-    { lat: 40.7309, lng: -74.0045 },
-    { lat: 40.7340, lng: -74.0018 },
-  ],
-};
 
 const SIDEBAR_ICONS: SidebarIconDef[] = [
   { key: 'overview', icon: PieIcon },
@@ -113,49 +127,118 @@ const SIDEBAR_ICONS: SidebarIconDef[] = [
   { key: 'billing', icon: CardIcon },
 ];
 
-// Rough per-km rate used to suggest a rent figure once a route is calculated.
-// Purely a starting-point default — the field stays freely editable.
+// Default pricing assumptions used only to pre-fill the create-rental form;
+// every figure stays freely editable before submit.
+const BASE_PRICE_DEFAULT = 15;
 const RATE_PER_KM = 1.35;
+const SERVICE_FEE_RATE = 0.1;
 
 export default function Services() {
-  const [selectedTripId, setSelectedTripId] = useState<string>(TRIP_DETAIL.id);
+  const [selectedTripId, setSelectedTripId] = useState<string>(SAMPLE_TRIPS[0].id);
   const [query, setQuery] = useState<string>('');
   const [topCollapsed, setTopCollapsed] = useState(false);
   const [timelineCollapsed, setTimelineCollapsed] = useState(false);
 
+  // Loaded rental (GET /api/rentals/:id)
+  const [rental, setRental] = useState<RentalRecord | null>(null);
+  const [rentalLoading, setRentalLoading] = useState(false);
+  const [rentalError, setRentalError] = useState<string | null>(null);
+
   // Leaflet map instance (handed up from TripMap via onMapReady).
   const [mapInstance, setMapInstance] = useState<LeafletMap | null>(null);
 
-  // Route search: From / To, plus the calculated route once both are set.
+  // Route search for a NEW rental: From / To, plus the calculated route.
   const [fromPoint, setFromPoint] = useState<SearchPoint | null>(null);
   const [toPoint, setToPoint] = useState<SearchPoint | null>(null);
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const [routeLoading, setRouteLoading] = useState(false);
 
-  // Route-planning fields shown in the timeline panel. Time & rent
-  // auto-populate from the calculated route but stay editable — once the
-  // person edits them by hand we stop overwriting on every recalculation.
-  const [timeCalculation, setTimeCalculation] = useState('');
-  const [timeTouched, setTimeTouched] = useState(false);
-  const [rent, setRent] = useState('');
-  const [rentTouched, setRentTouched] = useState(false);
-  const [availability, setAvailability] = useState<Availability>('Available');
+  // Create-rental form fields.
+  const [customerId, setCustomerId] = useState('');
+  const [carId, setCarId] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [endTimeTouched, setEndTimeTouched] = useState(false);
+  const [distanceKm, setDistanceKm] = useState('');
+  const [distanceTouched, setDistanceTouched] = useState(false);
+  const [estimatedDuration, setEstimatedDuration] = useState('');
+  const [durationTouched, setDurationTouched] = useState(false);
+  const [basePrice, setBasePrice] = useState(BASE_PRICE_DEFAULT.toFixed(2));
+  const [distanceCharge, setDistanceCharge] = useState('');
+  const [distanceChargeTouched, setDistanceChargeTouched] = useState(false);
+  const [serviceFee, setServiceFee] = useState('');
+  const [serviceFeeTouched, setServiceFeeTouched] = useState(false);
 
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [createdRental, setCreatedRental] = useState<RentalRecord | null>(null);
+
+  // ── Fetch the selected rental whenever the selection changes ──────────
+  useEffect(() => {
+    let cancelled = false;
+    const id = Number(selectedTripId);
+    if (!Number.isFinite(id)) return;
+
+    setRentalLoading(true);
+    setRentalError(null);
+    setRental(null);
+
+    getRental(id)
+      .then((data: RentalRecord) => {
+        if (!cancelled) setRental(data);
+      })
+      .catch((err: Error) => {
+        if (!cancelled) setRentalError(err.message || 'Failed to load rental');
+      })
+      .finally(() => {
+        if (!cancelled) setRentalLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedTripId]);
+
+  // ── Auto-fill distance / duration once a route is calculated ──────────
   useEffect(() => {
     if (!routeInfo) return;
+    if (!distanceTouched) setDistanceKm(routeInfo.distanceKm.toFixed(1));
+    if (!durationTouched) setEstimatedDuration(Math.round(routeInfo.durationMin).toString());
+  }, [routeInfo, distanceTouched, durationTouched]);
 
-    const km = routeInfo.distanceKm;
-    const mins = Math.round(routeInfo.durationMin);
-    const hrs = Math.floor(mins / 60);
-    const remMins = mins % 60;
-    const timeLabel = hrs > 0 ? `${hrs}h ${remMins}m · ${km.toFixed(1)} km` : `${remMins}m · ${km.toFixed(1)} km`;
+  // ── Auto-fill end time = start time + estimated duration ──────────────
+  useEffect(() => {
+    if (!startTime || !estimatedDuration || endTimeTouched) return;
+    const start = new Date(startTime);
+    if (Number.isNaN(start.getTime())) return;
+    const mins = Number(estimatedDuration);
+    if (!Number.isFinite(mins)) return;
+    const end = new Date(start.getTime() + mins * 60_000);
+    setEndTime(toDatetimeLocalValue(end));
+  }, [startTime, estimatedDuration, endTimeTouched]);
 
-    if (!timeTouched) setTimeCalculation(timeLabel);
-    if (!rentTouched) setRent((km * RATE_PER_KM).toFixed(2));
-  }, [routeInfo, timeTouched, rentTouched]);
+  // ── Auto-fill distance charge / service fee from distance & base price ─
+  useEffect(() => {
+    const km = Number(distanceKm);
+    if (!Number.isFinite(km)) return;
+    if (!distanceChargeTouched) setDistanceCharge((km * RATE_PER_KM).toFixed(2));
+  }, [distanceKm, distanceChargeTouched]);
+
+  useEffect(() => {
+    const base = Number(basePrice) || 0;
+    const dist = Number(distanceCharge) || 0;
+    if (!serviceFeeTouched) setServiceFee(((base + dist) * SERVICE_FEE_RATE).toFixed(2));
+  }, [basePrice, distanceCharge, serviceFeeTouched]);
+
+  const totalAmount = useMemo(() => {
+    const base = Number(basePrice) || 0;
+    const dist = Number(distanceCharge) || 0;
+    const fee = Number(serviceFee) || 0;
+    return (base + dist + fee).toFixed(2);
+  }, [basePrice, distanceCharge, serviceFee]);
 
   const filteredTrips = useMemo(
-    () => TRIPS.filter((t) => t.name.toLowerCase().includes(query.toLowerCase()) || t.id.includes(query)),
+    () => SAMPLE_TRIPS.filter((t) => t.name.toLowerCase().includes(query.toLowerCase()) || t.id.includes(query)),
     [query]
   );
 
@@ -165,6 +248,58 @@ export default function Services() {
     setFromPoint(nextFrom);
     setToPoint(nextTo);
   };
+
+  const handleCreateRental = async () => {
+    setCreateError(null);
+    setCreatedRental(null);
+
+    if (!fromPoint || !toPoint) {
+      setCreateError('Pick a From and To location first.');
+      return;
+    }
+    if (!customerId || !carId) {
+      setCreateError('Customer ID and Car ID are required.');
+      return;
+    }
+    if (!startTime || !endTime) {
+      setCreateError('Start and end time are required.');
+      return;
+    }
+
+    const payload: CreateRentalData = {
+      customer_id: Number(customerId),
+      car_id: Number(carId),
+      start_time: new Date(startTime).toISOString(),
+      end_time: new Date(endTime).toISOString(),
+      pickup_location: fromPoint.label,
+      pickup_latitude: fromPoint.point.lat,
+      pickup_longitude: fromPoint.point.lng,
+      dropoff_location: toPoint.label,
+      dropoff_latitude: toPoint.point.lat,
+      dropoff_longitude: toPoint.point.lng,
+      distance_km: Number(distanceKm) || 0,
+      estimated_duration: Number(estimatedDuration) || 0,
+      base_price: Number(basePrice) || 0,
+      distance_charge: Number(distanceCharge) || 0,
+      service_fee: Number(serviceFee) || 0,
+      total_amount: Number(totalAmount) || 0,
+    };
+
+    setCreating(true);
+    try {
+      const created = await createRental(payload);
+      setCreatedRental(created);
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : 'Failed to create rental');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  // ── Derive map props from whichever rental is currently loaded ────────
+  const mapRoute: TripRoute | null = rental
+    ? buildMapRoute(rental)
+    : null;
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-black">
@@ -261,15 +396,19 @@ export default function Services() {
           <section className="relative h-full min-h-0 overflow-hidden bg-black">
             {/* Map fills the entire main area, edge to edge, behind everything else */}
             <div className="absolute inset-0 z-0">
-              <TripMap
-                route={TRIP_DETAIL.route}
-                fuelStops={TRIP_DETAIL.fuelStops}
-                fromPoint={fromPoint}
-                toPoint={toPoint}
-                onRouteInfo={setRouteInfo}
-                onRouteLoadingChange={setRouteLoading}
-                onMapReady={setMapInstance}
-              />
+              {mapRoute ? (
+                <TripMap
+                  route={mapRoute}
+                  fuelStops={[]}
+                  fromPoint={fromPoint}
+                  toPoint={toPoint}
+                  onRouteInfo={setRouteInfo}
+                  onRouteLoadingChange={setRouteLoading}
+                  onMapReady={setMapInstance}
+                />
+              ) : (
+                <MapFallback text={rentalLoading ? 'Loading rental…' : rentalError ?? 'No rental selected'} />
+              )}
             </div>
 
             {/*
@@ -287,11 +426,20 @@ export default function Services() {
               {/* ── Top bar: header + route search + stats, collapsible, glass blur ── */}
               <div className="pointer-events-auto shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl">
                 <div className="flex flex-wrap items-center gap-3.5 px-6 py-4">
-                  <h2 className="text-[22px] font-bold tracking-tight text-[#F5F5F5]">#{TRIP_DETAIL.id}</h2>
-                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[12.5px] text-[#A3A3A3]">
-                    {TRIP_DETAIL.date}
-                  </span>
-                  <StatusPill status={TRIP_DETAIL.status} />
+                  <h2 className="text-[22px] font-bold tracking-tight text-[#F5F5F5]">
+                    {rental ? `#${rental.rental_id}` : rentalLoading ? 'Loading…' : '—'}
+                  </h2>
+                  {rental && (
+                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[12.5px] text-[#A3A3A3]">
+                      {formatDateTime(rental.start_time)}
+                    </span>
+                  )}
+                  {rental && <StatusPill status={rental.status} />}
+                  {rentalError && (
+                    <span className="rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 text-[12.5px] text-red-400">
+                      {rentalError}
+                    </span>
+                  )}
 
                   <div className="ml-auto flex items-center gap-1">
                     {routeLoading && (
@@ -309,7 +457,7 @@ export default function Services() {
                   </div>
                 </div>
 
-                {/* Route search — From / To, with a swap button between them */}
+                {/* Route search — From / To, for planning a NEW rental */}
                 <div className="flex items-center gap-2 border-t border-white/10 px-6 py-3.5">
                   <div className="min-w-0 flex-1">
                     <MapSearchBar
@@ -341,6 +489,7 @@ export default function Services() {
                   </div>
                 </div>
 
+                {/* Stats — only fields the API actually returns */}
                 <div
                   className={`grid grid-cols-6 gap-[18px] border-t border-white/10 px-6 transition-[grid-template-rows,opacity,padding] duration-300 ${
                     topCollapsed ? 'py-0 opacity-0' : 'py-4 opacity-100'
@@ -351,12 +500,19 @@ export default function Services() {
                   }}
                 >
                   <div className="col-span-6 grid grid-cols-6 gap-[18px] overflow-hidden">
-                    <Stat label="Total distance" value={TRIP_DETAIL.stats.distance} />
-                    <Stat label="Trip time" value={TRIP_DETAIL.stats.time} />
-                    <Stat label="Maximum speed" value={TRIP_DETAIL.stats.maxSpeed} />
-                    <Stat label="Fuel consumption" value={TRIP_DETAIL.stats.fuel} />
-                    <Stat label="Passenger number" value={`${TRIP_DETAIL.stats.passengers} persons`} />
-                    <Stat label="Road condition" value={TRIP_DETAIL.stats.road} accentClassName="text-[#34D399]" />
+                    <Stat label="Distance" value={rental?.distance_km != null ? `${rental.distance_km} km` : '—'} />
+                    <Stat
+                      label="Duration"
+                      value={rental?.estimated_duration != null ? formatMinutes(rental.estimated_duration) : '—'}
+                    />
+                    <Stat label="Vehicle" value={rental ? `${rental.make} ${rental.model} '${rental.year}` : '—'} />
+                    <Stat label="Base price" value={rental?.base_price != null ? `$${rental.base_price}` : '—'} />
+                    <Stat label="Distance charge" value={rental?.distance_charge != null ? `$${rental.distance_charge}` : '—'} />
+                    <Stat
+                      label="Total amount"
+                      value={rental?.total_amount != null ? `$${rental.total_amount}` : '—'}
+                      accentClassName="text-[#34D399]"
+                    />
                   </div>
                 </div>
               </div>
@@ -365,7 +521,7 @@ export default function Services() {
               <div className="flex min-h-0 flex-1 justify-end">
                 <div
                   className={`pointer-events-auto flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl transition-[width] duration-300 ${
-                    timelineCollapsed ? 'w-14' : 'w-[320px]'
+                    timelineCollapsed ? 'w-14' : 'w-[340px]'
                   }`}
                 >
                   <div
@@ -374,7 +530,7 @@ export default function Services() {
                     }`}
                   >
                     {!timelineCollapsed && (
-                      <span className="text-xs font-semibold uppercase tracking-wide text-[#A3A3A3]">Route timeline</span>
+                      <span className="text-xs font-semibold uppercase tracking-wide text-[#A3A3A3]">Rental</span>
                     )}
                     <button
                       type="button"
@@ -388,88 +544,182 @@ export default function Services() {
 
                   {!timelineCollapsed && (
                     <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-4">
-                      {/* ── Route-planning inputs ── */}
-                      <div className="mb-5 flex flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4">
-                        <FieldLabel>From</FieldLabel>
-                        <input
-                          value={fromPoint?.label ?? ''}
-                          onChange={(e) => setFromPoint(e.target.value ? { point: fromPoint?.point ?? { lat: 0, lng: 0 }, label: e.target.value } : null)}
-                          placeholder="Search a starting point above"
-                          className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-[#F5F5F5] outline-none placeholder:text-[#6B6B6B] focus:border-[#8C7CFF]"
-                        />
-
-                        <FieldLabel>To</FieldLabel>
-                        <input
-                          value={toPoint?.label ?? ''}
-                          onChange={(e) => setToPoint(e.target.value ? { point: toPoint?.point ?? { lat: 0, lng: 0 }, label: e.target.value } : null)}
-                          placeholder="Search a destination above"
-                          className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-[#F5F5F5] outline-none placeholder:text-[#6B6B6B] focus:border-[#8C7CFF]"
-                        />
-
-                        <FieldLabel>Time calculation</FieldLabel>
-                        <input
-                          value={timeCalculation}
-                          onChange={(e) => {
-                            setTimeCalculation(e.target.value);
-                            setTimeTouched(true);
-                          }}
-                          placeholder={routeLoading ? 'Calculating…' : 'Auto-fills once route is found'}
-                          className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-[#F5F5F5] outline-none placeholder:text-[#6B6B6B] focus:border-[#8C7CFF]"
-                        />
-                        {routeInfo && routeInfo.alternativeCount > 0 && (
-                          <span className="-mt-2 text-[11px] text-[#8B8FA3]">
-                            +{routeInfo.alternativeCount} alternate route{routeInfo.alternativeCount > 1 ? 's' : ''} shown on map
-                          </span>
-                        )}
-
-                        <FieldLabel>Rent</FieldLabel>
-                        <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 focus-within:border-[#8C7CFF]">
-                          <span className="text-[13px] text-[#6B6B6B]">$</span>
-                          <input
-                            value={rent}
-                            onChange={(e) => {
-                              setRent(e.target.value);
-                              setRentTouched(true);
-                            }}
-                            placeholder="0.00"
-                            inputMode="decimal"
-                            className="flex-1 min-w-0 bg-transparent text-[13px] text-[#F5F5F5] outline-none placeholder:text-[#6B6B6B]"
+                      {/* ── Loaded rental: real pickup/dropoff timeline ── */}
+                      <span className="mb-3 block text-xs font-semibold uppercase tracking-wide text-[#A3A3A3]">
+                        Route
+                      </span>
+                      {rental ? (
+                        <>
+                          <TimelineItem
+                            marker="dot"
+                            label="Pickup"
+                            time={formatDateTime(rental.start_time)}
+                            address={rental.pickup_location}
                           />
+                          <TimelineItem
+                            marker="square"
+                            label="Drop-off"
+                            time={formatDateTime(rental.end_time)}
+                            address={rental.dropoff_location}
+                            isLast
+                          />
+                        </>
+                      ) : (
+                        <p className="pb-2 text-[13px] text-[#6B6B6B]">
+                          {rentalLoading ? 'Loading…' : rentalError ?? 'Select a trip to see its route.'}
+                        </p>
+                      )}
+
+                      <div className="my-5 h-px bg-white/10" />
+
+                      {/* ── Create a new rental (POST /api/rentals) ── */}
+                      <span className="mb-3 block text-xs font-semibold uppercase tracking-wide text-[#A3A3A3]">
+                        Create new rental
+                      </span>
+
+                      <div className="flex flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                        <div className="grid grid-cols-2 gap-2.5">
+                          <div className="flex flex-col gap-1.5">
+                            <FieldLabel>Customer ID</FieldLabel>
+                            <input
+                              value={customerId}
+                              onChange={(e) => setCustomerId(e.target.value)}
+                              inputMode="numeric"
+                              placeholder="e.g. 12"
+                              className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-[#F5F5F5] outline-none placeholder:text-[#6B6B6B] focus:border-[#8C7CFF]"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1.5">
+                            <FieldLabel>Car ID</FieldLabel>
+                            <input
+                              value={carId}
+                              onChange={(e) => setCarId(e.target.value)}
+                              inputMode="numeric"
+                              placeholder="e.g. 7"
+                              className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-[#F5F5F5] outline-none placeholder:text-[#6B6B6B] focus:border-[#8C7CFF]"
+                            />
+                          </div>
                         </div>
 
-                        <FieldLabel>Availability</FieldLabel>
-                        <select
-                          value={availability}
-                          onChange={(e) => setAvailability(e.target.value as Availability)}
-                          className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-[#F5F5F5] outline-none focus:border-[#8C7CFF]"
+                        <FieldLabel>Pickup (search "From" above)</FieldLabel>
+                        <div className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-[#F5F5F5]">
+                          {fromPoint?.label ?? <span className="text-[#6B6B6B]">Not set</span>}
+                        </div>
+
+                        <FieldLabel>Drop-off (search "To" above)</FieldLabel>
+                        <div className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-[#F5F5F5]">
+                          {toPoint?.label ?? <span className="text-[#6B6B6B]">Not set</span>}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2.5">
+                          <div className="flex flex-col gap-1.5">
+                            <FieldLabel>Start time</FieldLabel>
+                            <input
+                              type="datetime-local"
+                              value={startTime}
+                              onChange={(e) => setStartTime(e.target.value)}
+                              className="rounded-lg border border-white/10 bg-black/30 px-2.5 py-2 text-[12.5px] text-[#F5F5F5] outline-none focus:border-[#8C7CFF]"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1.5">
+                            <FieldLabel>End time</FieldLabel>
+                            <input
+                              type="datetime-local"
+                              value={endTime}
+                              onChange={(e) => {
+                                setEndTime(e.target.value);
+                                setEndTimeTouched(true);
+                              }}
+                              className="rounded-lg border border-white/10 bg-black/30 px-2.5 py-2 text-[12.5px] text-[#F5F5F5] outline-none focus:border-[#8C7CFF]"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2.5">
+                          <div className="flex flex-col gap-1.5">
+                            <FieldLabel>Distance (km)</FieldLabel>
+                            <input
+                              value={distanceKm}
+                              onChange={(e) => {
+                                setDistanceKm(e.target.value);
+                                setDistanceTouched(true);
+                              }}
+                              inputMode="decimal"
+                              placeholder={routeLoading ? 'Calculating…' : 'Auto from route'}
+                              className="rounded-lg border border-white/10 bg-black/30 px-2.5 py-2 text-[12.5px] text-[#F5F5F5] outline-none placeholder:text-[#6B6B6B] focus:border-[#8C7CFF]"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1.5">
+                            <FieldLabel>Duration (min)</FieldLabel>
+                            <input
+                              value={estimatedDuration}
+                              onChange={(e) => {
+                                setEstimatedDuration(e.target.value);
+                                setDurationTouched(true);
+                              }}
+                              inputMode="numeric"
+                              placeholder={routeLoading ? 'Calculating…' : 'Auto from route'}
+                              className="rounded-lg border border-white/10 bg-black/30 px-2.5 py-2 text-[12.5px] text-[#F5F5F5] outline-none placeholder:text-[#6B6B6B] focus:border-[#8C7CFF]"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2.5">
+                          <div className="flex flex-col gap-1.5">
+                            <FieldLabel>Base price</FieldLabel>
+                            <MoneyInput value={basePrice} onChange={setBasePrice} />
+                          </div>
+                          <div className="flex flex-col gap-1.5">
+                            <FieldLabel>Distance charge</FieldLabel>
+                            <MoneyInput
+                              value={distanceCharge}
+                              onChange={(v) => {
+                                setDistanceCharge(v);
+                                setDistanceChargeTouched(true);
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2.5">
+                          <div className="flex flex-col gap-1.5">
+                            <FieldLabel>Service fee</FieldLabel>
+                            <MoneyInput
+                              value={serviceFee}
+                              onChange={(v) => {
+                                setServiceFee(v);
+                                setServiceFeeTouched(true);
+                              }}
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1.5">
+                            <FieldLabel>Total</FieldLabel>
+                            <div className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/20 px-3 py-2">
+                              <span className="text-[13px] text-[#6B6B6B]">$</span>
+                              <span className="text-[13px] font-semibold text-[#F5F5F5]">{totalAmount}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {createError && <p className="text-[12px] text-red-400">{createError}</p>}
+                        {createdRental && (
+                          <p className="text-[12px] text-[#34D399]">
+                            Created rental #{createdRental.rental_id} — status: {createdRental.status}
+                            {createdRental.hold_expires_at
+                              ? ` (hold expires ${formatDateTime(createdRental.hold_expires_at)})`
+                              : ''}
+                          </p>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={handleCreateRental}
+                          disabled={creating}
+                          className="mt-1 rounded-lg bg-[#8C7CFF] px-3 py-2.5 text-[13px] font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
                         >
-                          <option value="Available">Available</option>
-                          <option value="Booked">Booked</option>
-                          <option value="Unavailable">Unavailable</option>
-                        </select>
+                          {creating ? 'Creating…' : 'Create rental'}
+                        </button>
                       </div>
-
-                      <div className="mb-3 h-px bg-white/10" />
-
-                      <TimelineItem
-                        marker="dot"
-                        label={TRIP_DETAIL.route.start.label}
-                        time={TRIP_DETAIL.route.start.time}
-                        address={TRIP_DETAIL.route.start.address}
-                      />
-                      <TimelineItem
-                        marker="ring"
-                        label={TRIP_DETAIL.route.stop.label}
-                        time={TRIP_DETAIL.route.stop.time}
-                        address={TRIP_DETAIL.route.stop.address}
-                      />
-                      <TimelineItem
-                        marker="square"
-                        label={TRIP_DETAIL.route.finish.label}
-                        time={TRIP_DETAIL.route.finish.time}
-                        address={TRIP_DETAIL.route.finish.address}
-                        isLast
-                      />
                     </div>
                   )}
                 </div>
@@ -480,6 +730,79 @@ export default function Services() {
       </div>
     </div>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+function buildMapRoute(rental: RentalRecord): TripRoute | null {
+  // pg returns `numeric`/`decimal` columns as strings (not JS numbers) to
+  // avoid float precision loss, so coerce every coordinate explicitly —
+  // otherwise `pickupLat + dropoffLat` silently string-concatenates instead
+  // of adding, producing NaN that crashes Leaflet deep in its internals.
+  const pickupLat = Number(rental.pickup_latitude);
+  const pickupLng = Number(rental.pickup_longitude);
+  const dropoffLat = Number(rental.dropoff_latitude);
+  const dropoffLng = Number(rental.dropoff_longitude);
+
+  if (![pickupLat, pickupLng, dropoffLat, dropoffLng].every(Number.isFinite)) {
+    console.error('buildMapRoute: non-numeric coordinates on rental', rental);
+    return null;
+  }
+
+  // Maps.tsx expects start/stop/finish. We only have two real points, so
+  // "stop" is a computed midpoint used purely to make the polyline draw —
+  // it carries no real timestamp/address and is never shown in the UI list.
+  const midLat = (pickupLat + dropoffLat) / 2;
+  const midLng = (pickupLng + dropoffLng) / 2;
+
+  return {
+    start: {
+      label: 'Pickup',
+      time: formatDateTime(rental.start_time),
+      address: rental.pickup_location,
+      lat: pickupLat,
+      lng: pickupLng,
+    },
+    stop: {
+      label: '',
+      time: '',
+      address: '',
+      lat: midLat,
+      lng: midLng,
+    },
+    finish: {
+      label: 'Drop-off',
+      time: formatDateTime(rental.end_time),
+      address: rental.dropoff_location,
+      lat: dropoffLat,
+      lng: dropoffLng,
+    },
+  };
+}
+
+function formatDateTime(iso: string) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString(undefined, {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+function formatMinutes(mins: number) {
+  const hrs = Math.floor(mins / 60);
+  const rem = Math.round(mins % 60);
+  return hrs > 0 ? `${hrs}h ${rem}m` : `${rem}m`;
+}
+
+function toDatetimeLocalValue(d: Date) {
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -506,15 +829,37 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
   return <span className="text-[11px] font-semibold uppercase tracking-wide text-[#6B6B6B]">{children}</span>;
 }
 
-function StatusPill({ status }: { status: TripStatus }) {
-  const isActive = status === 'Active';
+function MoneyInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
-    <span
-      className={`rounded-full px-[11px] py-1 text-[11.5px] font-bold ${
-        isActive ? 'bg-[#FBBF24]/[0.12] text-[#FBBF24]' : 'bg-[#34D399]/[0.12] text-[#34D399]'
-      }`}
-    >
-      {status}
+    <div className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/30 px-3 py-2 focus-within:border-[#8C7CFF]">
+      <span className="text-[13px] text-[#6B6B6B]">$</span>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="0.00"
+        inputMode="decimal"
+        className="min-w-0 flex-1 bg-transparent text-[13px] text-[#F5F5F5] outline-none placeholder:text-[#6B6B6B]"
+      />
+    </div>
+  );
+}
+
+// Status can be any of: pending, confirmed, payment_pending, paid, active,
+// completed, cancelled — whatever your `rentals.status` column allows.
+function StatusPill({ status }: { status: string }) {
+  const styles: Record<string, string> = {
+    pending: 'bg-[#FBBF24]/[0.12] text-[#FBBF24]',
+    payment_pending: 'bg-[#FBBF24]/[0.12] text-[#FBBF24]',
+    confirmed: 'bg-[#60A5FA]/[0.12] text-[#60A5FA]',
+    paid: 'bg-[#818CF8]/[0.12] text-[#818CF8]',
+    active: 'bg-[#FBBF24]/[0.12] text-[#FBBF24]',
+    completed: 'bg-[#34D399]/[0.12] text-[#34D399]',
+    cancelled: 'bg-[#F87171]/[0.12] text-[#F87171]',
+  };
+  const style = styles[status] ?? 'bg-white/[0.08] text-[#A3A3A3]';
+  return (
+    <span className={`rounded-full px-[11px] py-1 text-[11.5px] font-bold capitalize ${style}`}>
+      {status.replace('_', ' ')}
     </span>
   );
 }
@@ -538,9 +883,8 @@ function TimelineItem({ marker, label, time, address, isLast }: TimelineItemProp
       </div>
       <div>
         <div className="mb-1 text-[11.5px] uppercase tracking-wide text-[#6B6B6B]">{label}</div>
-        <div className="text-[13.5px] font-semibold leading-relaxed text-[#F5F5F5]">
-          {time} {address}
-        </div>
+        <div className="text-[13.5px] font-semibold leading-relaxed text-[#F5F5F5]">{time}</div>
+        <div className="text-[12.5px] leading-relaxed text-[#A3A3A3]">{address}</div>
       </div>
     </div>
   );
