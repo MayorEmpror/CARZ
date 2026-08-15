@@ -75,6 +75,29 @@ export interface Payment{
   transaction_ref:  string  ;
 }
 
+export type CreateRentalData = {
+  customer_id: number;
+  car_id: number;
+
+  start_time: string;
+  end_time: string;
+
+  pickup_location: string;
+  pickup_latitude: number;
+  pickup_longitude: number;
+
+  dropoff_location: string;
+  dropoff_latitude: number;
+  dropoff_longitude: number;
+
+  distance_km: number;
+  estimated_duration: number;
+
+  base_price: number;
+  distance_charge: number;
+  service_fee: number;
+  total_amount: number;
+};
 
 export type AddCarFormState = {
   owner_id: number;
