@@ -29,6 +29,11 @@ const GOLD = '#F5C542';
 const MIN_ZOOM = 3;
 const WORLD_BOUNDS = L.latLngBounds([-85, -180], [85, 180]);
 
+// Default view shown before any trip/rental route has loaded — Manhattan, NYC.
+const MANHATTAN_CENTER: [number, number] = [40.7831, -73.9712];
+const DEFAULT_ZOOM = 12;
+const ROUTE_ZOOM = 15;
+
 export interface LatLng {
   lat: number;
   lng: number;
@@ -59,7 +64,8 @@ export interface RouteInfo {
 }
 
 interface TripMapProps {
-  route: TripRoute;
+  /** Optional — when omitted, the map just shows the default Manhattan, NYC view. */
+  route?: TripRoute | null;
   fuelStops?: LatLng[];
   /** Route search — when both are set, a driving route is fetched and drawn in gold. */
   fromPoint?: SearchPoint | null;
@@ -136,7 +142,12 @@ function FitBounds({ points }: { points: LatLng[] }) {
   useEffect(() => {
     if (didFit.current || !points.length) return;
     const bounds = L.latLngBounds(points.map((p) => [p.lat, p.lng] as [number, number]));
-    map.fitBounds(bounds, { padding: [56, 56] });
+    // Cap how far fitBounds is allowed to zoom in. Without this, a route
+    // whose points are identical or nearly identical (e.g. a rental record
+    // missing real pickup/dropoff coordinates) makes Leaflet zoom all the
+    // way to max zoom on a single spot — which just looks like a solid
+    // black/blank tile with a lone marker on it.
+    map.fitBounds(bounds, { padding: [56, 56], maxZoom: ROUTE_ZOOM });
     didFit.current = true;
   }, [map, points]);
 
@@ -149,6 +160,56 @@ function MapInstanceGrabber({ onReady }: { onReady?: (map: L.Map) => void }) {
   useEffect(() => {
     onReady?.(map);
   }, [map, onReady]);
+  return null;
+}
+
+// Leaflet measures its container's size at the instant it initializes. In a
+// CSS grid/flex layout the container isn't always fully sized yet at that
+// exact moment (fonts/layout can still be settling), so the map can paint
+// tiles for the wrong size and appear blank until something — like a search
+// triggering flyTo — forces a recalculation. This forces that recalculation
+// proactively: once right after mount (plus a couple of short-delay retries
+// to catch any late layout shifts), and again on every window resize.
+function InvalidateOnMount() {
+  const map = useMap();
+
+  useEffect(() => {
+    // invalidateSize() alone can no-op: it only re-triggers Leaflet's tile
+    // update if it thinks the container's *size* changed. But the actual
+    // bug here is that tiles never painted correctly in the first place
+    // (the map mounted a beat before its CSS-grid parent settled into its
+    // final size), even though the size now reads correctly. A search
+    // fixes it because flyTo() unconditionally forces Leaflet to re-run
+    // its tile-layer update as part of panning/zooming. We replicate that
+    // here with a zero-distance pan, which forces the same unconditional
+    // refresh without visibly moving the map.
+    const forceRedraw = () => {
+      map.invalidateSize({ pan: false });
+      map.panBy([1, 0], { animate: false });
+      map.panBy([-1, 0], { animate: false });
+    };
+
+    forceRedraw();
+    const t1 = setTimeout(forceRedraw, 150);
+    const t2 = setTimeout(forceRedraw, 500);
+
+    const handleResize = () => forceRedraw();
+    window.addEventListener('resize', handleResize);
+
+    let observer: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(() => forceRedraw());
+      observer.observe(map.getContainer());
+    }
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      window.removeEventListener('resize', handleResize);
+      observer?.disconnect();
+    };
+  }, [map]);
+
   return null;
 }
 
@@ -372,7 +433,7 @@ function RouteLayer({ from, to, onRouteInfo, onLoadingChange }: RouteLayerProps)
         });
 
         const bounds = L.latLngBounds(mainLatLngs);
-        map.fitBounds(bounds, { padding: [72, 72] });
+        map.fitBounds(bounds, { padding: [72, 72], maxZoom: ROUTE_ZOOM });
       } catch (err) {
         if ((err as Error).name !== 'AbortError') {
           console.error('Routing error:', err);
@@ -416,7 +477,7 @@ function RouteLayer({ from, to, onRouteInfo, onLoadingChange }: RouteLayerProps)
 }
 
 export default function TripMap({
-  route,
+  route = null,
   fuelStops = [],
   fromPoint = null,
   toPoint = null,
@@ -424,14 +485,17 @@ export default function TripMap({
   onRouteLoadingChange,
   onMapReady,
 }: TripMapProps) {
-  const routePoints: LatLng[] = [route.start, route.stop, route.finish];
+  // No trip route yet (e.g. first page load, before a rental is selected) —
+  // fall back to a default Manhattan, NYC view instead of an empty map.
+  const routePoints: LatLng[] = route ? [route.start, route.stop, route.finish] : [];
   const polylinePath: [number, number][] = routePoints.map((p) => [p.lat, p.lng]);
-  const center: [number, number] = [route.stop.lat, route.stop.lng];
+  const center: [number, number] = route ? [route.stop.lat, route.stop.lng] : MANHATTAN_CENTER;
+  const zoom = route ? ROUTE_ZOOM : DEFAULT_ZOOM;
 
   return (
     <MapContainer
       center={center}
-      zoom={15}
+      zoom={zoom}
       minZoom={MIN_ZOOM}
       maxBounds={WORLD_BOUNDS}
       maxBoundsViscosity={1.0}
@@ -450,14 +514,19 @@ export default function TripMap({
         noWrap={true}
       />
 
-      <FitBounds points={routePoints} />
+      <InvalidateOnMount />
+      {route && <FitBounds points={routePoints} />}
       <MapInstanceGrabber onReady={onMapReady} />
 
-      <Polyline positions={polylinePath} pathOptions={{ color: ACCENT, weight: 3, opacity: 0.9 }} />
+      {route && (
+        <>
+          <Polyline positions={polylinePath} pathOptions={{ color: ACCENT, weight: 3, opacity: 0.9 }} />
 
-      <Marker position={[route.start.lat, route.start.lng]} icon={dotIcon} />
-      <Marker position={[route.stop.lat, route.stop.lng]} icon={ringIcon} />
-      <Marker position={[route.finish.lat, route.finish.lng]} icon={squareIcon} />
+          <Marker position={[route.start.lat, route.start.lng]} icon={dotIcon} />
+          <Marker position={[route.stop.lat, route.stop.lng]} icon={ringIcon} />
+          <Marker position={[route.finish.lat, route.finish.lng]} icon={squareIcon} />
+        </>
+      )}
 
       {fuelStops.map((stop, i) => (
         <Marker key={i} position={[stop.lat, stop.lng]} icon={fuelIcon} />
