@@ -40,17 +40,50 @@ export default function PaymentPage({ rental }: { rental: RentalRecord }) {
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!rental.hold_expires_at) return;
-    const expiresAt = new Date(rental.hold_expires_at).getTime();
-
-    const tick = () => {
-      const diff = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
-      setSecondsLeft(diff);
-    };
-    tick();
-    const interval = setInterval(tick, 1000);
-    return () => clearInterval(interval);
-  }, [rental.hold_expires_at]);
+      if (!rental.hold_expires_at) return;
+  
+      // Defensive parse: if the API gives us a timestamp with no timezone
+      // marker (no trailing Z, no +HH:MM offset), the browser's Date parser
+      // treats it as LOCAL time instead of UTC. For a UTC+5 user that silently
+      // shifts hold_expires_at 5 hours into the past — a fresh hold reads as
+      // already expired on first render.
+      const raw = rental.hold_expires_at;
+      const hasTzMarker = /Z$|[+-]\d{2}:\d{2}$/.test(raw);
+      const normalized = hasTzMarker ? raw : `${raw}Z`;
+      const expiresAt = new Date(normalized).getTime();
+  
+      // One-time diagnostic log — remove once confirmed.
+      console.log('[hold_expires_at debug]', {
+        raw,
+        hadTzMarker: hasTzMarker,
+        normalized,
+        parsedAsUTC: new Date(expiresAt).toISOString(),
+        parsedAsLocalWouldHaveBeen: new Date(raw).toString(),
+        nowLocal: new Date().toString(),
+        browserTZOffsetMinutes: new Date().getTimezoneOffset(),
+      });
+  
+      if (Number.isNaN(expiresAt)) {
+        // Parsing failed outright — don't silently show "0:00"
+        console.log('[hold_expires_at debug] ' + JSON.stringify({
+          raw,
+          hadTzMarker: hasTzMarker,
+          normalized,
+          parsedAsUTC: new Date(expiresAt).toISOString(),
+          nowLocal: new Date().toString(),
+          browserTZOffsetMinutes: new Date().getTimezoneOffset(),
+        }, null, 2));
+        return;
+      }
+  
+      const tick = () => {
+        const diff = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+        setSecondsLeft(diff);
+      };
+      tick();
+      const interval = setInterval(tick, 1000);
+      return () => clearInterval(interval);
+    }, [rental.hold_expires_at]);
 
   const holdExpired = secondsLeft === 0;
 

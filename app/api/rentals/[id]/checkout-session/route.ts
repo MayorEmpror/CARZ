@@ -20,7 +20,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   // Re-verify the session user server-side — never trust a rental id alone.
   const user = await requireUser();
-
+  console.log("user now in payout : ", user.user_id)
   const rental = await getRental(rentalId);
   if (!rental) {
     return NextResponse.json({ error: 'Rental not found' }, { status: 404 });
