@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type ComponentType } from 'react';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import type { Map as LeafletMap } from 'leaflet';
 import type { LatLng, TripRoute, SearchPoint, RouteInfo } from './Maps';
 import { createRental, getRental } from '@/lib/api/rentals'; // TODO: adjust to your real import path
@@ -56,6 +57,11 @@ import type { CreateRentalData } from '@/lib/types';
  *   prime meridian), and would let a NaN customer/car id (from an empty
  *   string prop) slip through as "present". Each missing/invalid field
  *   gets its own named error message instead of one generic one.
+ * - After a rental is successfully created, the user is redirected via
+ *   router.push to /rentals/[rentalId]/payment — the Stripe Checkout page
+ *   — instead of staying on this screen. The inline "Created rental #..."
+ *   success message still renders for the brief moment before the route
+ *   change completes, as a fallback in case the redirect is ever slow.
  * ─────────────────────────────────────────────────────────────────────────
  */
 
@@ -157,6 +163,7 @@ const RATE_PER_KM = 1.35;
 const SERVICE_FEE_RATE = 0.1;
 
 export default function Services({ customerId, carId }: ServicesProps) {
+  const router = useRouter();
   const [selectedTripId, setSelectedTripId] = useState<string>(SAMPLE_TRIPS[0].id);
   const [query, setQuery] = useState<string>('');
   const [topCollapsed, setTopCollapsed] = useState(false);
@@ -376,6 +383,12 @@ export default function Services({ customerId, carId }: ServicesProps) {
     try {
       const created = await createRental(payload);
       setCreatedRental(created);
+      // Send the user straight to Stripe Checkout for this rental. Using
+      // router.push (not window.location) keeps this a client-side nav —
+      // no full page reload — while still landing on the server component
+      // at /rentals/[rentalId]/payment, which re-verifies ownership and
+      // status before showing the "Pay now" button.
+      router.push(`/rentals/${created.rental_id}/payment`);
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : 'Failed to create rental');
     } finally {
