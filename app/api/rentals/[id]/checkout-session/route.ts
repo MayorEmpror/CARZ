@@ -20,14 +20,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   // Re-verify the session user server-side — never trust a rental id alone.
   const user = await requireUser();
+  
   console.log("user now in payout : ", user.user_id)
   const rental = await getRental(rentalId);
+  console.log('[checkout-session debug]', {
+    rental_customer_id: rental?.customer_id,
+    rental_customer_id_type: typeof rental?.customer_id,
+    user_id: user?.id,
+    user_id_type: typeof user?.id,
+  });
   if (!rental) {
     return NextResponse.json({ error: 'Rental not found' }, { status: 404 });
   }
 
   // Ownership check: this user must be the one who booked this rental.
-  if (String(rental.customer_id) !== String(user.id)) {
+  if (String(rental.customer_id) !== String(user.user_id)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
