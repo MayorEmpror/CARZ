@@ -39,6 +39,7 @@ function getCameraPosition(angle: Angle): [number, number, number] {
 
 interface CarModelViewerProps {
   modelUrl: string;
+  ReflectorOn: Boolean;
   mode?: "viewer" | "renderer";
   angle?: Angle;
   onReady?: () => void;
@@ -147,6 +148,7 @@ function SceneLighting() {
 
 export default function CarModelViewer({
   modelUrl = " ",
+  ReflectorOn = true,
   mode = "viewer",
   angle = "three-quarter",
   onReady,
@@ -209,7 +211,7 @@ export default function CarModelViewer({
               }}
             />
           </Stage>
-          <ReflectiveGround y={groundY} />
+        { ReflectorOn ? <ReflectiveGround y={groundY} />:<></> }
           <Environment preset="city" />
         </Suspense>
 
