@@ -18,8 +18,6 @@ interface PageProps {
 
 export default async function ServicesPage({ params }: PageProps) {
   const { id } = await params;
-  const p = await params;
-  console.log("params "  + p)
   const user = await requireUser();
 
   return <Services customerId={String(user.user_id)} carId={id} />;

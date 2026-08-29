@@ -16,6 +16,9 @@ export default function CarNav({ id }: { id: string }) {
       case "Services":
         router.push(`/showroom/${id}/services`);
         break;
+      case "Engine":
+          router.push(`/showroom/${id}/engine`);
+          break;
 
       case "Shop":
         router.push(`/showroom/${id}/shop`);
@@ -29,7 +32,7 @@ export default function CarNav({ id }: { id: string }) {
 
   return (
     <nav className="flex items-center gap-2">
-      {["Models", "Services", "Shop", "Purchase"].map((item, i) => (
+      {["Models", "Services", "Shop", "Purchase", "Engine"].map((item, i) => (
         <button
           key={item}
           onClick={() => handleNavClick(item)}
