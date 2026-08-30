@@ -176,7 +176,7 @@ export default async function EnginePage({
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-[#0B0B10] text-white">
-      <CarModelViewer modelUrl={MODEL_URL} />
+      <CarModelViewer modelUrl={MODEL_URL} ReflectorOn={true}/>
 
       {/* Left sidebar */}
       <aside className="fixed left-0 top-0 h-screen w-60 z-20 bg-[#0B0B10]/95 backdrop-blur-xl border-r border-white/10 flex flex-col pointer-events-auto">
