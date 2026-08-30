@@ -204,7 +204,7 @@ export default async function EnginePage({
         </nav>
         <div className="px-4 py-4 border-t border-white/10 space-y-1">
           <Link
-            href={`/car/${carId}`}
+            href={`/showroom/${carId}`}
             className="flex items-center justify-between text-xs text-neutral-400 hover:text-white px-2 py-2"
           >
             Back to Car <ArrowUpRight className="w-3 h-3" />
