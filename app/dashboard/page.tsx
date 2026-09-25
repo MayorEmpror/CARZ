@@ -1,33 +1,34 @@
-
-import DashboardLayout from "./DashboardLayout"
-import {getCarByUserId} from "@/lib/api/car"
-import {getSalesByUserId} from "@/lib/api/sales"
-import  {getCustomers} from "@/lib/api/customers"
-import {getPaymentsByUserId} from "@/lib/api/payments"
+import DashboardLayout from "./DashboardLayout";
+import { getCarByUserId } from "@/lib/api/car";
+import { getSalesByUserId } from "@/lib/api/sales";
+import { getCustomers } from "@/lib/api/customers";
+import { getPaymentsByUserId } from "@/lib/api/payments";
 import { requireUser } from "@/lib/IAM/validators";
-import {getCarwithPerfByUserId} from "@/lib/api/carperf"
-import { redirect } from "next/navigation"
+import { getCarwithPerfByUserId } from "@/lib/api/carperf";
+import { redirect } from "next/navigation";
+import { getFilteredCars } from "@/lib/api/products";
+import { CarFilters } from "@/components/filters/carFilterTypes";
 
-export default async function dashbaord (){
+export default async function dashbaord() {
   const user = await requireUser();
   if (user.role != "owner") {
-    redirect("/login")
+    redirect("/login");
   }
-    console.log("user id : " + user  )
-    const cars = await getCarByUserId(user.user_id  );
-    const sales = await getSalesByUserId(user.user_id  );
-    const carswithperf = await getCarwithPerfByUserId(user.user_id );
-    const customers = await getCustomers();
-    const payments = await getPaymentsByUserId(user.user_id  );
-   
-    // over here we will need to check if the owner account is there, if not go to register as owner 
-    return <DashboardLayout 
-    initialCars={cars}
-    sales={sales}
-    payments={payments}
-    customers={customers}
-    user={user}
-    carswithperf={carswithperf}
-   
+  console.log("user id : " + user);
+  const cars = await getCarByUserId(user.user_id);
+  const sales = await getSalesByUserId(user.user_id);
+  const carswithperf = await getCarwithPerfByUserId(user.user_id);
+  const customers = await getCustomers();
+  const payments = await getPaymentsByUserId(user.user_id);
+  // over here we will need to check if the owner account is there, if not go to register as owner
+  return (
+    <DashboardLayout
+      initialCars={cars}
+      sales={sales}
+      payments={payments}
+      customers={customers}
+      user={user}
+      carswithperf={carswithperf}
     />
+  );
 }

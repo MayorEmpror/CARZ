@@ -1,15 +1,17 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import {
   OrbitControls,
   Environment,
   Stage,
   useGLTF,
   MeshReflectorMaterial,
+  Effects,
 } from "@react-three/drei";
+import { EffectComposer, SSAO } from "@react-three/postprocessing";
 
 const TARGET_SIZE = 40;
 const GROUND_EPSILON = TARGET_SIZE * 0.004;
@@ -38,8 +40,8 @@ function getCameraPosition(angle: Angle): [number, number, number] {
 }
 
 interface CarModelViewerProps {
-  modelUrl: string;
-  ReflectorOn: Boolean;
+  modelUrl?: string;
+  ReflectorOn: boolean;
   mode?: "viewer" | "renderer";
   angle?: Angle;
   onReady?: () => void;
@@ -72,6 +74,12 @@ function CarModel({
       -box.min.y * scale,
       -center.z * scale,
     );
+    cloned.traverse(obj => {
+      if (obj instanceof THREE.Mesh) {
+        obj.castShadow = true
+        obj.receiveShadow = true
+      }
+    })
     return cloned;
   }, [scene, url, targetSize]);
 
@@ -85,10 +93,21 @@ function CarModel({
   return <primitive object={normalized} />;
 }
 
+function easeInOutCubic(x: number): number {
+  return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+}
+
 function Loader() {
+  const box = useRef<THREE.Mesh>(null)
+  useFrame((state) => {
+    if (box.current) 
+    {
+      box.current.rotation.y = easeInOutCubic((state.clock.elapsedTime))
+    }
+  })
   return (
-    <mesh>
-      <boxGeometry args={[0.1, 0.1, 0.1]} />
+    <mesh ref={box}>
+      <boxGeometry args={[1.0, 1.0, 1.0]} />
       <meshBasicMaterial color="#d4d4d8" wireframe />
     </mesh>
   );
@@ -98,7 +117,7 @@ const FOG_COLOR = "#0a0a0a";
 
 function ReflectiveGround({ y }: { y: number }) {
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, y, 0]}>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, y, 0]} receiveShadow>
       <planeGeometry args={[100, 100]} />
       <MeshReflectorMaterial
         blur={[400, 100]}
@@ -211,6 +230,7 @@ export default function CarModelViewer({
               }}
             />
           </Stage>
+
         { ReflectorOn ? <ReflectiveGround y={groundY} />:<></> }
           <Environment preset="city" />
         </Suspense>
@@ -226,6 +246,7 @@ export default function CarModelViewer({
             autoRotateSpeed={0.8}
           />
         )}
+      
       </Canvas>
     </div>
   );

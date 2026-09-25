@@ -34,13 +34,15 @@ export default function DashboardLayout ({
   customers,
   payments,
   user,
-  carswithperf,
+  carswithperf, 
+  allCars,
 
 }: {
   initialCars: Car[]  ;
   sales: Sales[]  ;
   customers: User[] ;
-  payments: Payment[] ;
+    payments: Payment[];
+    allCars: any;
   user : User;
     carswithperf: CarDetails[];
 
@@ -101,7 +103,7 @@ export default function DashboardLayout ({
             <CustomerTab initialCustomers={customers} />
           )}
           {activeTab === "sales" && <SalesTab sales={sales} />}
-          {activeTab === "payments" && <PaymentsTab payments ={payments}/>}
+          {activeTab === "payments" && <PaymentsTab cars={initialCars} />}
           {activeTab === "profile" && <Profile user={user} />}
           {activeTab === "addcar" &&  <AddCar user_id = {user.user_id}/>}
           {activeTab === "manage_cars" &&  <ManageCars user_id = {user.user_id} carswithperf={carswithperf}/>}
