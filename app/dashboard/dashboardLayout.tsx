@@ -68,11 +68,11 @@ export default function DashboardLayout ({
   const navItems: NavItem<Tab>[] = [
     { tab: "cars", label: "Cars", icon: CarIcon },
     { tab: "customers", label: "Customers", icon: Users },
-    { tab: "sales", label: "sales", icon: UserCog },
-    { tab: "profile", label: "profile", icon: PlusCircle },
-    { tab: "payments", label: "payments", icon: ClipboardPen },
-    { tab: "addcar", label: "AddCar", icon: PlusCircle },
-    { tab : "manage_cars", label : "manage", icon: Wrench},
+    { tab: "sales", label: "Sales", icon: UserCog },
+    { tab: "profile", label: "Profile", icon: PlusCircle },
+    { tab: "payments", label: "Payments", icon: ClipboardPen },
+    { tab: "addcar", label: "Catalog", icon: PlusCircle },
+    { tab : "manage_cars", label : "Analytics", icon: Wrench},
   ];
    console.log("user id : " + user.user_id)
   return (

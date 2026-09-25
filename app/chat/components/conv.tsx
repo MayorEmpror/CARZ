@@ -13,7 +13,6 @@
 //     breaks if they're missing — rows just fall back to the plain
 //     "last message" line and no story ring:
 //       avatar_url            -> real photo instead of initials
-//       is_group               -> powers the "Group" tab
 //       is_pinned               -> powers the "Pinned" tab
 //       is_archived             -> powers the "Archived" tab (and is
 //                                   excluded from "All messages")
@@ -35,11 +34,10 @@
 //     "back" affordance lives in the thread's own header — see note
 //     at the bottom for wiring that into ChatClient/ChatHeader.
 
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { Check, CheckCheck, Mic, Paperclip, PenSquare, Plus } from "lucide-react";
-
+import { Check, CheckCheck, Mic, Paperclip, PenSquare, ArrowLeft } from "lucide-react";
+import Link from "next/link";
 interface CurrentUser {
   user_id: number;
   full_name: string;
@@ -55,7 +53,6 @@ interface ConversationSummary {
 
   // Optional — see ASSUMPTIONS above.
   avatar_url?: string;
-  is_group?: boolean;
   is_pinned?: boolean;
   is_archived?: boolean;
   is_typing?: boolean;
@@ -65,11 +62,10 @@ interface ConversationSummary {
   last_message_read?: boolean;
 }
 
-type TabKey = "all" | "group" | "pinned" | "archived";
+type TabKey = "all" | "pinned" | "archived";
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "all", label: "All messages" },
-  { key: "group", label: "Group" },
   { key: "pinned", label: "Pinned" },
   { key: "archived", label: "Archived" },
 ];
@@ -195,7 +191,6 @@ export default function ConversationsSidebar({
 
   const filtered = useMemo(() => {
     return conversations.filter((c) => {
-      if (activeTab === "group") return !!c.is_group;
       if (activeTab === "pinned") return !!c.is_pinned;
       if (activeTab === "archived") return !!c.is_archived;
       // "All messages" excludes archived, like most chat apps.
@@ -204,7 +199,7 @@ export default function ConversationsSidebar({
   }, [conversations, activeTab]);
 
   const sectionLabel =
-    activeTab === "group" ? "GROUPS" : activeTab === "pinned" ? "PINNED" : activeTab === "archived" ? "ARCHIVED" : "PERSONAL";
+    activeTab === "pinned" ? "PINNED" : activeTab === "archived" ? "ARCHIVED" : "PERSONAL";
 
   // Story rail: people with a photo, most recently active first. Purely
   // a visual affordance from existing conversation data — wire up a
@@ -221,34 +216,13 @@ export default function ConversationsSidebar({
       ].join(" ")}
     >
       {/* Story rail */}
-      <div className="scrollbar-none flex gap-4 overflow-x-auto px-4 pb-2 pt-4">
-        <div className="flex shrink-0 flex-col items-center gap-1.5">
-          <button
-            type="button"
-            className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-dashed border-white/25 text-white/60 transition hover:border-white/40 hover:text-white/80"
-            aria-label="Add to your story"
-          >
-            <Plus className="h-5 w-5" />
-          </button>
-          <span className="text-[11px] text-neutral-400">My Story</span>
-        </div>
-
-        {storyContacts.map((c) => (
-          <div key={c.conversation_id} className="flex shrink-0 flex-col items-center gap-1.5">
-            <div className="rounded-full ring-2 ring-blue-500 ring-offset-2 ring-offset-black">
-              <img
-                src={c.avatar_url}
-                alt={c.title}
-                className="h-14 w-14 rounded-full object-cover"
-              />
-            </div>
-            <span className="max-w-[56px] truncate text-[11px] text-neutral-300">{firstName(c.title)}</span>
-          </div>
-        ))}
+      <div className="px-4 pb-3 pt-4">
+        <Link href="/showroom">
+          <ArrowLeft/>
+        </Link>
       </div>
-
       {/* Header */}
-      <div className="flex items-center justify-between px-4 pb-3 pt-2">
+      <div className="flex items-center justify-between px-4 pb-3">
         <h1 className="text-[28px] font-bold leading-none text-white">Messages</h1>
         <button
           type="button"
@@ -260,7 +234,7 @@ export default function ConversationsSidebar({
       </div>
 
       {/* Tabs */}
-      <div className="scrollbar-none flex gap-2 overflow-x-auto px-4 pb-3">
+      <div className="scrollbar-none flex gap-2 overflow-x-none px-4 pb-3">
         {TABS.map((tab) => {
           const active = tab.key === activeTab;
           return (

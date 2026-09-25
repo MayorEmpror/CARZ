@@ -9,7 +9,7 @@ type Tab = "cars" | "chat" | "settings";
 
 const navItems: NavItem<Tab>[] = [
   { tab: "cars", label: "Cars", icon: Car },
-  { tab: "chat", label: "chat", icon: MessageSquare },
+  { tab: "chat", label: "My Chat", icon: MessageSquare },
   { tab: "settings", label: "Settings", icon: Settings },
 ];
 export default function ShowroomShell({
