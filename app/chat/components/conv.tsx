@@ -34,7 +34,7 @@
 //     "back" affordance lives in the thread's own header — see note
 //     at the bottom for wiring that into ChatClient/ChatHeader.
 
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Check, CheckCheck, Mic, Paperclip, PenSquare, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -158,7 +158,11 @@ function Preview({ c }: { c: ConversationSummary }) {
 
 export default function ConversationsSidebar({
   currentUser,
+  className,
+  referer,
 }: {
+  className?: string
+  referer?:string,
   currentUser: CurrentUser;
 }) {
   const params = useParams<{ conversationId?: string }>();
@@ -188,7 +192,7 @@ export default function ConversationsSidebar({
       cancelled = true;
     };
   }, []);
-
+  const searchParams = useSearchParams();
   const filtered = useMemo(() => {
     return conversations.filter((c) => {
       if (activeTab === "pinned") return !!c.is_pinned;
@@ -205,11 +209,13 @@ export default function ConversationsSidebar({
   // a visual affordance from existing conversation data — wire up a
   // real stories/status feed here if/when you have one.
   const storyContacts = useMemo(() => conversations.filter((c) => c.avatar_url).slice(0, 8), [conversations]);
-
+  const refererURL = searchParams.get("referer");
+  
   return (
     <aside
       className={[
-        "w-full shrink-0 flex-col bg-black md:flex md:w-80 md:border-r md:border-white/10",
+        "w-full shrink-0 flex-col bg-black md:flex md:w-80 md:border-r md:border-white/10 h-full",
+        className,
         // Mobile: hide the sidebar entirely once a thread is open,
         // so the thread can take the full screen (WhatsApp behavior).
         activeId ? "hidden" : "flex",
@@ -217,7 +223,7 @@ export default function ConversationsSidebar({
     >
       {/* Story rail */}
       <div className="px-4 pb-3 pt-4">
-        <Link href="/showroom">
+        <Link href={`/${refererURL ? refererURL : "showroom"}`}>
           <ArrowLeft/>
         </Link>
       </div>
@@ -281,7 +287,7 @@ export default function ConversationsSidebar({
           return (
             <Link
               key={c.conversation_id}
-              href={`/chat/${c.conversation_id}`}
+              href={`/chat/${c.conversation_id}${referer ? '?referer='+referer : ""}`}
               className={[
                 "flex items-center gap-3 border-b border-white/5 px-4 py-3.5 transition",
                 isActive ? "bg-white/[0.06]" : "hover:bg-white/[0.03]",

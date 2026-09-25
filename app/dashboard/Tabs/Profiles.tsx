@@ -102,7 +102,42 @@ function CardShell({
 
 /* ---------------- main component ---------------- */
 
+// app/chat/layout.tsx
+//
+// Server component. Runs once per session (doesn't remount when you
+// navigate between /chat and /chat/[conversationId]) -- this is what
+// gives you the WhatsApp-style persistent left column. Only {children}
+// swaps as the URL changes.
+//
+// requireUser() stays here (server-only) -- both the sidebar and the
+// thread page share this one resolved user instead of each doing
+// their own auth check.
+
+import { requireUser } from "@/lib/IAM/validators";
+import ConversationsSidebar from "@/app/chat/components/conv";
+// export default async function ChatLayout({
+//   children,
+// }: {
+//   children: React.ReactNode;
+// }) {
+//   const user = await requireUser();
+//   const currentUser = { user_id: user.user_id, full_name: user.full_name };
+
+//   return (
+//     <div className="flex h-screen w-full overflow-hidden bg-neutral-900">
+//       {/* Left column -- conversation list. Fixed width via the
+//           sidebar's own w-80, so it doesn't need a flex value here. */}
+
+//       {/* Main chat area -- takes all remaining space. min-w-0 is
+//           required, not decorative: without it a wide message or long
+//           unbreakable string inside {children} can force this column
+//           wider than the viewport instead of scrolling/wrapping. */}
+//      <div className="flex min-w-0 flex-1 flex-col overflow-y-auto no-scrollbar">{children}</div>
+//     </div>
+//   );
+// }
 export default function Profile({ user }: Props) {
+  const currentUser = { user_id: user.user_id, full_name: user.full_name };
   return (
     <div
       className="relative h-screen w-full max-w-6xl overflow-hidden bg-neutral-950 p-4"
@@ -128,7 +163,9 @@ export default function Profile({ user }: Props) {
           <PaymentsCard payments={dummyPayments} />
         </div>
         <div style={{ gridArea: "chats" }} className="min-h-0 overflow-hidden">
-          <ChatsCard messages={dummyMessages} />
+          <CardShell className="flex h-full w-full flex-col contain-content bg-black rounded-2xl">
+            <ConversationsSidebar currentUser={currentUser} className="border-none" referer="dashboard" />
+          </CardShell>
         </div>
       </div>
     </div>
@@ -467,7 +504,7 @@ function ChatsCard({ messages }: { messages: Message[] }) {
         </div>
       </div>
 
-      <div className="mt-4 flex-1 space-y-3 overflow-y-auto pr-1">
+      {/*<div className="mt-4 flex-1 space-y-3 overflow-y-auto pr-1">
         {messages.map((m) => (
           <div key={m.id} className={`flex ${m.from === "staff" ? "justify-end" : "justify-start"}`}>
             <div
@@ -489,7 +526,7 @@ function ChatsCard({ messages }: { messages: Message[] }) {
             </div>
           </div>
         ))}
-      </div>
+      </div>*/}
 
       <div className="mt-4 flex items-center gap-2 border-t border-white/[0.06] pt-3">
         <div className="flex flex-1 items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 focus-within:border-white/20">
@@ -511,3 +548,7 @@ function ChatsCard({ messages }: { messages: Message[] }) {
     </CardShell>
   );
 }
+
+
+
+
