@@ -20,13 +20,13 @@ type Props = {
 };
 
 /* ---------------- design tokens ----------------
-   Copper (#C08552) is the one accent — a concierge/
-   brass tone rather than the default blue-on-black.
-   Everything else stays quiet: warm stone neutrals
-   on near-black, hairline borders, no drop shadows
-   doing the work of hierarchy. */
+   Monochrome only: near-white accent on near-black,
+   everything else in stone/neutral greys. No hue
+   anywhere — hierarchy comes from contrast and
+   hairline borders, not color. One typeface
+   (the default sans) used throughout for consistency. */
 
-const ACCENT = "#C08552";
+const ACCENT = "#E5E5E5"; // neutral-200 — the only "highlight" tone, still strictly grey
 
 /* ---------------- dummy data ---------------- */
 
@@ -48,10 +48,10 @@ type Note = {
 };
 
 const dummyPayments: Payment[] = [
-  { id: "1", ref: "№1227673", date: "06 Sep 2025", category: "Restaurant", dot: "bg-emerald-400", amount: 270 },
-  { id: "2", ref: "№1227589", date: "05 Sep 2025", category: "Bar", dot: "bg-amber-400", amount: 120 },
-  { id: "3", ref: "№1226793", date: "05 Sep 2025", category: "Spa", dot: "bg-sky-400", amount: 70 },
-  { id: "4", ref: "№1226479", date: "04 Sep 2025", category: "Laundry", dot: "bg-pink-400", amount: 56 },
+  { id: "1", ref: "№1227673", date: "06 Sep 2025", category: "Restaurant", dot: "bg-neutral-200", amount: 270 },
+  { id: "2", ref: "№1227589", date: "05 Sep 2025", category: "Bar", dot: "bg-neutral-400", amount: 120 },
+  { id: "3", ref: "№1226793", date: "05 Sep 2025", category: "Spa", dot: "bg-neutral-500", amount: 70 },
+  { id: "4", ref: "№1226479", date: "04 Sep 2025", category: "Laundry", dot: "bg-neutral-600", amount: 56 },
 ];
 
 const dummyNotes: Note[] = [
@@ -138,11 +138,11 @@ export default function Profile({ user }: Props) {
 /* ---------------- Profile card ---------------- */
 
 // Tailwind can't resolve arbitrary values built from a JS variable at
-// build time, so the copper "owner" color is applied via inline style
+// build time, so the accent color is applied via inline style
 // instead of a dynamic class string.
 const ROLE_STYLES: Record<string, string> = {
-  customer: "text-sky-300",
-  driver: "text-emerald-300",
+  customer: "text-stone-400",
+  driver: "text-stone-300",
 };
 
 function ProfileCard({ user }: Props) {
@@ -211,13 +211,13 @@ function ProfileCard({ user }: Props) {
               backgroundImage: `conic-gradient(${ACCENT}, transparent 65%, ${ACCENT})`,
             }}
           >
-            <div className="flex h-full w-full items-center justify-center rounded-full bg-neutral-900 font-serif text-base text-stone-100">
+            <div className="flex h-full w-full items-center justify-center rounded-full bg-neutral-900 text-base text-stone-100">
               {initials}
             </div>
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-serif text-lg text-stone-100">{user.full_name}</span>
+              <span className="text-lg font-semibold text-stone-100">{user.full_name}</span>
             </div>
             <div
               className={`mt-1 inline-flex items-center gap-1 text-xs font-medium capitalize ${roleColorClass}`}
@@ -334,7 +334,7 @@ function PaymentsCard({ payments }: { payments: Payment[] }) {
             type="checkbox"
             checked={selected.length === payments.length}
             onChange={toggleAll}
-            className="h-3.5 w-3.5 accent-[color:var(--accent)]"
+            className="h-3.5 w-3.5"
             style={{ accentColor: ACCENT }}
           />
           <span className="flex-1">Guest &amp; date</span>

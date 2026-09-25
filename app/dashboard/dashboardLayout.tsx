@@ -5,8 +5,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import CustomerTab from "@/components/CustomersHandler"
 import SalesTab from "./sales/SalesTab"
-import  PaymentsTab from "./Handlers/PaymentsTsb"
-import Profile from "./Handlers/Profiles"
+import  PaymentsTab from "./Tabs/PaymentsTsb"
+import Profile from "./Tabs/Profiles"
 import CarTab from "../admin/CarHandlers/CarHandler";
 import AddCar from "../admin/AddCar";
 import ManageCars from "./managecars/ManageCars"

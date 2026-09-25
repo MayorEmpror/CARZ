@@ -1,5 +1,5 @@
 
-import DashboardLayout from "./dashboardLayout"
+import DashboardLayout from "./DashboardLayout"
 import {getCarByUserId} from "@/lib/api/car"
 import {getSalesByUserId} from "@/lib/api/sales"
 import  {getCustomers} from "@/lib/api/customers"
