@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "concurrently -n next,cron -c blue,yellow \"next dev\" \"node scripts/cron-dev.mjs\"",
+    "serve": "./dev.sh && tsx server/socket.ts",
     "build": "next build",
     "start": "next start",
     "socket": "tsx server/socket.ts",

@@ -148,8 +148,14 @@ export default function AdminLayout({
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("cars");
   const router = useRouter()
-  const handleLogout = ()=>{
-    console.log("handle admin logout here ")
+  const handleLogout = async ()=>{
+    const response = await fetch("/api/auth/logout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    
   }
   const navItems: NavItem<Tab>[] = [
     { tab: "cars", label: "Cars", icon: CarIcon },
