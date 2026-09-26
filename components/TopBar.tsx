@@ -14,7 +14,6 @@ export default function TopBar({ user }: Data) {
   const [time, setTime] = useState<string>("");
   const [hasOwnerAccount, setHasOwnerAccount] = useState(false);
   const [switching, setSwitching] = useState(false);
-
   useEffect(() => {
     const update = () =>
       setTime(
@@ -85,15 +84,7 @@ export default function TopBar({ user }: Data) {
   }
  console.log(hasOwnerAccount)
   return (
-    <header className="flex h-14 items-center justify-between border-b border-white/10 bg-[#131318] px-5">
-      <div className="flex items-center gap-2">
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white">
-          <div className="h-3 w-3 rounded-full bg-[#131318]" />
-        </div>
-        <span className="text-sm font-semibold leading-tight tracking-wide text-white">
-          CARZ
-        </span>
-      </div>
+    <header className="flex h-14 items-center justify-between border-b border-neutral-800 bg-neutral-950 px-5">
 
       <div className="flex items-center gap-6 text-xs text-neutral-400">
         <span>
@@ -106,25 +97,28 @@ export default function TopBar({ user }: Data) {
       </div>
 
       <div className="flex items-center gap-3">
-       
+
         {hasOwnerAccount && (
           <button
             onClick={handleSwitchToOwner}
             disabled={switching}
-            className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex items-center gap-1.5 rounded-full border border-neutral-700 bg-neutral-800/50 px-3 py-1.5 text-xs font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Building2 className="h-3.5 w-3.5" />
             {switching ? "Switching..." : "Switch to Owner mode"}
           </button>
         )}
 
-        <button className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-[#131318] hover:bg-neutral-200">
+        <button className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-neutral-950 hover:bg-neutral-200">
           <Crown className="h-3.5 w-3.5" />
           PRO features
         </button>
 
-        <div className="h-8 w-8 overflow-hidden rounded-full bg-white/10">
-          <img src="/avatar.jpg" alt="Account" className="h-full w-full object-cover" />
+        <div className="h-8 w-8 overflow-hidden rounded-full bg-neutral-800 flex items-center justify-center">
+          <span>
+            {user.full_name[0]}
+
+          </span>
         </div>
       </div>
     </header>

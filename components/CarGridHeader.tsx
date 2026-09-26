@@ -5,8 +5,8 @@ import { ChevronDown, Map } from "lucide-react";
 export default function CarGridHeader({ count }: { count: number }) {
   return (
     <div className="mb-4 flex items-center justify-between">
-      <h1 className="text-lg font-semibold text-neutral-900">
-        {count} vehicles to rent
+      <h1 className="text-lg font-semibold text-neutral-200">
+        {count} vehicles available
       </h1>
 
       <div className="flex items-center gap-4 text-sm">

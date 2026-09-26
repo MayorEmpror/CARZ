@@ -93,7 +93,7 @@ export function CheckboxRow({
   onChange: (val: boolean) => void;
 }) {
   return (
-    <label className="flex items-center gap-2 py-1 text-sm text-neutral-700">
+    <label className="flex items-center gap-2 py-1 text-sm text-neutral-200">
       <input
         type="checkbox"
         checked={checked}

@@ -77,7 +77,7 @@ export default function FilterPanel() {
   };
 
   return (
-    <aside className="w-64 shrink-0 border-r border-white/10 bg-[#131318] px-4 py-4 overflow-scroll no-scrollbar">
+    <aside className="w-64 shrink-0 border-r border-neutral-800 bg-neutral-950 px-4 py-4 overflow-scroll no-scrollbar">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-white">Filter by</h2>
         <button
@@ -88,7 +88,7 @@ export default function FilterPanel() {
         </button>
       </div>
 
-      <div className="border-b border-white/10 pb-3">
+      <div className="border-b border-neutral-800 pb-3">
         <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-neutral-500">
           Rental type
         </div>
@@ -99,7 +99,7 @@ export default function FilterPanel() {
         />
       </div>
 
-      <div className="flex items-center justify-between border-b border-white/10 py-3">
+      <div className="flex items-center justify-between border-b border-neutral-800 py-3">
         <span className="text-[11px] font-medium uppercase tracking-wide text-neutral-500">
           Available now only
         </span>
@@ -109,7 +109,7 @@ export default function FilterPanel() {
         />
       </div>
 
-      <div className="border-b border-white/10 py-3">
+      <div className="border-b border-neutral-800 py-3">
         <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-neutral-500">
           Price range / hour
         </div>
@@ -142,7 +142,7 @@ export default function FilterPanel() {
         </div>
       </CollapsibleSection>
 
-      <div className="border-b border-white/10 py-3">
+      <div className="border-b border-neutral-800 py-3">
         <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-neutral-500">
           Transmission
         </div>

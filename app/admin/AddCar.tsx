@@ -170,14 +170,7 @@ export default function AddCar({ user_id }: Props) {
       const upload = await uploadImage(file);
 
       // -------------------------
-      // Create car
-      // -------------------------
-
-      const result = await Addcars({
-        ...form,
-
-        url: upload.url,
-      });
+      
 
       if (!result.success) {
         setStatus("error");
