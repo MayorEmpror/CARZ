@@ -12,7 +12,7 @@
 // ChatClient is now "../components/Chatclient" not "./components/...".
 
 import { requireUser } from "@/lib/IAM/validators";
-import ChatClient from "../components/Chatclient";
+import ChatClient from "../components/ChatClient";
 import {getCarById} from "@/lib/api/car"
 
 export default async function ChatThreadPage({
