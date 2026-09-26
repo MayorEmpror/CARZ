@@ -2,8 +2,9 @@ import { carDetails } from "@/lib/api/car";
 import CarModelViewer from "@/components/CarModelViewer/CarModelViewer";
 import { Gauge, ArrowUpRight, Fuel, Star } from "lucide-react";
 import { Link } from "next-transition-router";
-import ContactOwnerButton from "../Components/Contactownerbutton";
 import CarNav from "./Carnav"
+import CarHeader from "./CarHeader";
+import ContactOwnerButton from "../Components/Contactownerbutton";
 // ---------- helpers ----------
 
 function computeScore(car: {
@@ -86,7 +87,6 @@ export default async function CarDetails({
 }) {
   const { id } = await params;
   const carperf = await carDetails(id);
-
   if (!carperf) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0B0B10] text-white text-2xl">
@@ -120,37 +120,7 @@ export default async function CarDetails({
 
   return (
     <div className="min-h-screen relative overflow-hidden pointer-events-none bg-[#0B0B10]">
-      <CarModelViewer modelUrl={model_path}/>
-
-      {/* Top nav */}
-      <div className="relative z-10 flex items-center justify-between px-8 py-6 pointer-events-auto">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-md bg-white" />
-          <div>
-            <p className="text-white font-semibold leading-none">Luxon</p>
-            <p className="text-neutral-500 text-[10px] leading-none mt-0.5">Prime Cars Collection</p>
-          </div>
-        </div>
-        <CarNav id={id} />
-        {/*<nav className="flex items-center gap-2">
-          {["Models", "Services", "Shop", "Purchase"].map((item, i) => (
-            <button
-              key={item}
-              className={`px-4 py-2 rounded-full text-sm transition-colors ${
-                i === 0
-                  ? "bg-white text-neutral-900"
-                  : "bg-white/5 backdrop-blur-md border border-white/10 text-neutral-300 hover:bg-white/10"
-              }`}
-            >
-              {item}
-            </button>
-          ))}
-        
-          <ContactOwnerButton carId={Number(id)} className={navButtonClass} />
-        </nav>*/}
-      </div>
-
-     
+      <CarHeader id={id} model_path={model_path} mode="normal"/>
 
       {/* Title block */}
       <div className="relative z-10 px-8 mt-4 pointer-events-none">
@@ -161,16 +131,20 @@ export default async function CarDetails({
         <p className="text-4xl font-semibold text-white mt-4">
           ${Number(price).toLocaleString()}
         </p>
+        <ContactOwnerButton
+          carId={Number(id)}
+          className="block p-3 backdrop-blur-3xl border border-zinc-600 mt-2 rounded-md"
+        />
       </div>
 
       {/* Left stat column */}
-      <div className="absolute left-8 top-[240px] z-10 flex flex-col gap-4 pointer-events-auto">
-      <Link
+      <div className="absolute left-8 top-[320px] z-10 flex flex-col gap-4 pointer-events-auto">
+      {/*<Link
           href="/showroom"
           className="rounded-lg z-10 mt-5 relative bg-slate-700 px-6 py-3 text-white hover:bg-slate-600 transition"
         >
           Showroom
-        </Link>
+        </Link>*/}
         <StatPill icon={<Gauge className="w-6 h-6" />} label="Top Speed" value={`${top_speed} mph`} />
         <StatPill icon={<ArrowUpRight className="w-6 h-6" />} label="0-100 mph" value={`${acceleration_0_100}s`} />
         <StatPill icon={<Fuel className="w-6 h-6" />} label="Fuel Efficiency" value={`${fuel_efficiency} mpg`} />
@@ -237,7 +211,10 @@ export default async function CarDetails({
             View Full Report
           </button>
         </GlassCard>
+        
       </div>
+      
+     
     </div>
   );
 }

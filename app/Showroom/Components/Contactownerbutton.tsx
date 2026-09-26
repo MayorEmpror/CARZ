@@ -13,6 +13,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { UserPen } from "lucide-react";
 
 interface ContactOwnerButtonProps {
   carId: number;
@@ -60,7 +61,7 @@ export default function ContactOwnerButton({ carId, className }: ContactOwnerBut
   return (
     <div className="relative">
       <button onClick={handleClick} disabled={loading} className={className}>
-        {loading ? "Starting…" : "Contact"}
+        {loading ? "Starting…" : <span className="flex gap-4">Contact <UserPen/></span>}
       </button>
       {error && (
         <p className="absolute top-full mt-1 right-0 whitespace-nowrap text-xs text-red-400">

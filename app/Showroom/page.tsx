@@ -4,7 +4,7 @@ import Cardisplay from "./Components/Cardisplay";
 import ShowroomShell from "./Components/ShowroomShell";
 import { getCurrentUser } from "@/lib/IAM/session";
 
-type Tab = "cars"  | "settings";
+type Tab = "cars"  | "settings" | "purchase";
 
 export default async function ShowroomPage({
   searchParams,
@@ -17,7 +17,7 @@ export default async function ShowroomPage({
   return (
     <ShowroomShell activeTab={activeTab} user={user}>
       <Topnav />
-      {activeTab === "cars" && <Cardisplay searchParams={searchParams} />}
+      {(activeTab === "cars" || activeTab == "purchase") ? <Cardisplay searchParams={searchParams} purchaseMode={activeTab == "purchase"} /> : ""}
  
     </ShowroomShell>
   );

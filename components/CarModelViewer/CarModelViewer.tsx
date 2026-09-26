@@ -12,6 +12,8 @@ import {
   Effects,
 } from "@react-three/drei";
 import { EffectComposer, SSAO } from "@react-three/postprocessing";
+import { useCarVisualizer } from "@/app/showroom/[id]/CarContext";
+import { usePathname } from "next/navigation";
 
 const TARGET_SIZE = 40;
 const GROUND_EPSILON = TARGET_SIZE * 0.004;
@@ -41,7 +43,7 @@ function getCameraPosition(angle: Angle): [number, number, number] {
 
 interface CarModelViewerProps {
   modelUrl?: string;
-  ReflectorOn: boolean;
+  ReflectorOn?: boolean;
   mode?: "viewer" | "renderer";
   angle?: Angle;
   onReady?: () => void;
@@ -57,7 +59,8 @@ function CarModel({
   onGroundLevel: (y: number) => void;
 }) {
   const { scene } = useGLTF(url ?? "");
-
+  const visualState = useCarVisualizer()
+  const pathname = usePathname()
   const normalized = useMemo(() => {
     if (!url) return null;
     const cloned = scene.clone(true);
@@ -76,8 +79,14 @@ function CarModel({
     );
     cloned.traverse(obj => {
       if (obj instanceof THREE.Mesh) {
-        obj.castShadow = true
-        obj.receiveShadow = true
+        obj.castShadow = false
+        obj.receiveShadow = false
+        if (visualState) {
+          if (visualState[0].mode === 'wireframe') {
+            obj.material.wireframe = true
+          }
+        }
+        
       }
     })
     return cloned;
@@ -100,11 +109,12 @@ function easeInOutCubic(x: number): number {
 function Loader() {
   const box = useRef<THREE.Mesh>(null)
   useFrame((state) => {
-    if (box.current) 
+    if (box.current)
     {
       box.current.rotation.y = easeInOutCubic((state.clock.elapsedTime))
     }
   })
+  
   return (
     <mesh ref={box}>
       <boxGeometry args={[1.0, 1.0, 1.0]} />
@@ -174,8 +184,8 @@ export default function CarModelViewer({
 }: CarModelViewerProps) {
   const [groundY, setGroundY] = useState(-GROUND_EPSILON);
   const [modelLoaded, setModelLoaded] = useState(false);
-
-  const targetSize =
+  
+  const targetSize =  
     mode === "renderer" ? TARGET_SIZE * RENDERER_SCALE_FACTOR : TARGET_SIZE;
 
   // Wait for real rendered frames (not just a fixed timer) before
@@ -246,7 +256,7 @@ export default function CarModelViewer({
             autoRotateSpeed={0.8}
           />
         )}
-      
+
       </Canvas>
     </div>
   );

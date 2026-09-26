@@ -6,11 +6,11 @@ import { FaGasPump, FaCarSide } from "react-icons/fa";
 import type { Car } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-export default function CarCard({ car }: { car: Car }) {
+export default function CarCard({ car, purchaseMode }: { car: Car, purchaseMode:boolean }) {
   return (
     <div
       className={cn(
-        "relative block w-full h-[420px] overflow-hidden group text-left border border-white/10 hover:border-white/20 transition-colors",
+        "relative block w-full h-[420px] overflow-hidden group text-left border border-white/10 hover:border-white/20 transition-colors rounded-md",
       )}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -45,10 +45,10 @@ export default function CarCard({ car }: { car: Car }) {
           <div className="flex items-end justify-between gap-3">
             <div className="leading-tight">
               <p className="text-white text-2xl font-bold">
-                {Math.round(Number(car.price) / 100000)}.0
+                {purchaseMode ? Math.round(Number(car.price)) : Math.round(Number(car.price) /  100000)}
                 <span className="text-neutral-300 text-base font-normal">
                   {" "}
-                  €/day
+                  {purchaseMode ? "€" : "€/day"}
                 </span>
               </p>
               <p className="text-white/50 text-sm font-medium">

@@ -45,6 +45,7 @@ export default function FilterPanel() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const tab = searchParams.get('tab')
   const [filters, setFilters] = useState<CarFilters>(() =>
     searchParamsToFilters(Object.fromEntries(searchParams.entries())),
   );
@@ -53,6 +54,9 @@ export default function FilterPanel() {
 
   const pushToUrl = (next: CarFilters) => {
     const params = filtersToSearchParams(next);
+    if (tab) {
+      params.set('tab', tab)
+    }
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
   };
 

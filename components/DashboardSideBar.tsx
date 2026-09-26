@@ -1,6 +1,7 @@
 "use client";
 import { LayoutDashboard, Settings, LogOut } from "lucide-react";
 import {NavItem} from "@/lib/types"
+import Image from "next/image";
 
 
 export type SidebarUser = {
@@ -101,8 +102,9 @@ export default function Sidebar<T extends string = string>({
     <div className={`${widthClassName} h-full bg-zinc-950 border-r border-zinc-800 flex flex-col`}>
       {/* LOGO / BRAND */}
       <div className="flex items-center gap-3 px-6 py-5 border-b border-zinc-800">
-        <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center">
-          <BrandIcon className="w-5 h-5 text-black" />
+        <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center invert">
+          {/*<BrandIcon className="w-5 h-5 text-black" />*/}
+          <Image src="/logo.png" width={400} height={400} alt="AutoLink Logo"/>
         </div>
         <div>
           <p className="text-white font-semibold text-sm leading-tight">

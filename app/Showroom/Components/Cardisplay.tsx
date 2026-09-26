@@ -6,13 +6,14 @@ import { searchParamsToFilters } from "@/components/filters/carFilters";
 
 export default async function Cardisplay({
   searchParams,
+  purchaseMode,
 }: {
-  searchParams: Promise<{ [key: string]: string | undefined }>;
+    searchParams: Promise<{ [key: string]: string | undefined }>;
+  purchaseMode: boolean
 }) {
   const sp = await searchParams;
   const filters = searchParamsToFilters(sp);
   const cars = await getFilteredCars(filters);
-  console.log(cars)
   return (
     <div className="flex h-full min-h-0 gap-6 px-6 py-5">
       {/* Fixed / sticky filter column */}
@@ -23,7 +24,7 @@ export default async function Cardisplay({
       {/* Scrollable car grid column */}
       <div className="flex-1 min-w-0 h-full overflow-y-auto">
         <CarGridHeader count={cars.length} />
-        <CarGrid cars={cars} />
+        <CarGrid cars={cars} purchaseMode={purchaseMode} />
       </div>
     </div>
   );

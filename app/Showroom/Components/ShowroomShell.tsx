@@ -5,13 +5,13 @@ import { Car, MessageSquare, Settings, HandCoins, MapPinSearch} from "lucide-rea
 import Sidebar from "@/components/DashboardSideBar";
 import { NavItem } from "@/lib/types";
 
-type Tab = "cars" | "chat" | "settings" | "hire" | "rent";
+type Tab = "cars" | "chat" | "settings" | "hire" | "purchase" ;
 
 const navItems: NavItem<Tab>[] = [
   { tab: "cars", label: "Cars", icon: Car },
   { tab: "hire", label: "Hire Driver", icon: MapPinSearch },
   { tab: "chat", label: "My Chat", icon: MessageSquare },
-  { tab: "rent", label: "Rent", icon: HandCoins },
+  { tab: "purchase", label: "Purchase Cars", icon: HandCoins },
   { tab: "settings", label: "Settings", icon: Settings },
 ];
 export default function ShowroomShell({
